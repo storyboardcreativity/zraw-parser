@@ -1,5 +1,5 @@
 CC := gcc
-CFL := -ggdb -fPIC
+CFL := -ggdb -fPIC -std=c++11
 TOOLCHAIN :=
 OUT_EXECUTABLE_NAME := zraw_processor
 ARCH :=

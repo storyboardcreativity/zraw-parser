@@ -1,7 +1,6 @@
 #pragma once
 
 #include <istream>
-#include <byteswap.h>
 #include <string.h>
 
 // For AES decryption
@@ -9,6 +8,7 @@
 #include <openssl/conf.h>
 #include <openssl/evp.h>
 
+#include "byteswap.hpp"
 #include "ZRawFrame.hpp"
 
 class ZRawFrameContainerParserSingletone
@@ -79,13 +79,13 @@ private:
 
     int32_t _processZrawBlock(std::istream &stream, ZRawFrame &frame, uint32_t data_size)
     {
-        auto pos = stream.tellg();
+        auto pos = (uint32_t) stream.tellg();
 
         // Process all subblocks
         while (stream.tellg() < pos + data_size)
             _processBlock(stream, frame);
 
-        return stream.tellg() - pos;
+        return (uint32_t) stream.tellg() - pos;
     }
 
     int32_t _processVersionBlock(std::istream &stream, ZRawFrame &frame, uint32_t data_size)
