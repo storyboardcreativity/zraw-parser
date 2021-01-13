@@ -2,3 +2,7 @@
 /zraw_processor
 /zraw_processor.dSYM/
 /checker.pgm
+/*.pgm
+/*.raw
+/*.bin
+/.vscode
