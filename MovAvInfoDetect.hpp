@@ -1,3 +1,4 @@
+#pragma once
 /*
 
 === This file is based on "libmediaplayerservice/MovAvInfoDetect.cpp" ===
@@ -22,6 +23,7 @@ https://github.com/FFmpeg/FFmpeg/blob/master/libavformat/mov.c
 #include <vector>
 #include <string>
 #include <inttypes.h>
+#include <sstream>
 
 enum AVMediaType
 {
@@ -34,8 +36,8 @@ enum AVMediaType
     AVMEDIA_TYPE_NB = 5
 };
 
-#define ALOGV printf
-#define ALOGD printf
+#define ALOGV c->string_stream
+#define ALOGD c->string_stream
 
 //#define INT_MAX      2147483647
 #define MKTAG(a, b, c, d) (a | (b << 8) | (c << 16) | (d << 24))
@@ -55,15 +57,47 @@ typedef struct FrameInfo
 
 typedef struct TrackInfo
 {
-    TrackInfo() : codec_name("none"), universal_sample_size(-1) {}
+    TrackInfo() : codec_name("none"), universal_sample_size(-1), codec_type(Unknown) {}
 
     std::string codec_name;
+
+    uint32_t zraw_raw_version;
+    uint32_t zraw_unk0;
+    uint32_t zraw_unk1;
+
+    enum TrackCodecType {Audio, Video, Unknown};
+    TrackCodecType codec_type;
+
     int32_t universal_sample_size;
     std::vector<FrameInfo_t> frames;
 } TrackInfo_t;
 
+typedef struct TracksInfo
+{
+    std::vector<TrackInfo_t> tracks;
+    uint32_t creation_time;
+} TracksInfo_t;
+
 typedef struct MOVContext
 {
+    MOVContext()
+    {
+        fp = nullptr;
+        file_size = 0;
+        time_scale = 0;
+        duration = 0;
+        found_moov = 0;
+        found_mdat = 0;
+        has_video = 0;
+        has_audio = 0;
+        mdat_count = 0;
+        isom = 0;
+        current_track_index = 0;
+        parse_table = nullptr;
+    }
+
+    std::stringstream string_stream;
+
     FILE *fp;
     int32_t file_size;
 
@@ -79,8 +113,8 @@ typedef struct MOVContext
     int32_t isom; /* 1 if file is ISO Media (mp4/3gp) */
 
     int current_track_index;
-    std::vector<TrackInfo_t> tracks;
-
+    TracksInfo_t tracks_info;
+    
     const struct MOVParseTableEntry *parse_table; /* could be eventually used to change the table */
 } MOVContext;
 
@@ -234,7 +268,7 @@ static int32_t mov_read_default(MOVContext *c, MOV_atom_t atom)
         a.offset += 8;
         if (a.size == 1)
         { /* 64 bit extended size */
-            ALOGV("length may error!\n");
+            ALOGV << "length may error!" << std::endl;
             a.size = get_be64(pb) - 8;
             a.offset += 8;
             total_size += 8;
@@ -249,10 +283,10 @@ static int32_t mov_read_default(MOVContext *c, MOV_atom_t atom)
         if (a.size < 0 || a.size > atom.size - total_size)
             break;
 
-        for (i = 0; c->parse_table[i].type != 0L && c->parse_table[i].type != a.type; i++)
+        for (i = 0; c->parse_table[i].type != 0L && c->parse_table[i].type != a.type; ++i)
             /* empty */;
 
-        ALOGV("type:%08x size:%x\n", a.type, a.size);
+        ALOGV << "type:" << a.type << " size:" << std::hex << a.size << std::dec << std::endl;
 
         if (c->parse_table[i].type == 0)
         { /* skip leaf atoms data */
@@ -281,7 +315,7 @@ static int32_t mov_read_default(MOVContext *c, MOV_atom_t atom)
 
 static int32_t mov_read_ftyp(MOVContext *c, MOV_atom_t atom)
 {
-    ALOGV("Reading \'ftyp\'\n");
+    ALOGV << "Reading \'ftyp\'" << std::endl;
 
     FILE *pb;
     uint32_t type;
@@ -298,7 +332,7 @@ static int32_t mov_read_ftyp(MOVContext *c, MOV_atom_t atom)
 
 static int32_t mov_read_mdat(MOVContext *c, MOV_atom_t atom)
 {
-    ALOGV("Reading \'mdat\'\n");
+    ALOGV << "Reading \'mdat\'" << std::endl;
 
     FILE *pb;
 
@@ -345,7 +379,7 @@ static int32_t mov_read_moov(MOVContext *c, MOV_atom_t atom)
 {
     int32_t err;
 
-    ALOGV("Reading \'moov\'\n");
+    ALOGV << "Reading \'moov\'" << std::endl;
 
     err = mov_read_default(c, atom);
     c->found_moov = 1;
@@ -356,7 +390,7 @@ static int32_t mov_read_moov(MOVContext *c, MOV_atom_t atom)
 
 static int32_t mov_read_mvhd(MOVContext *c, MOV_atom_t atom)
 {
-    ALOGV("Reading \'mvhd\'\n");
+    ALOGV << "Reading \'mvhd\'" << std::endl;
 
     FILE *pb = c->fp;
     int32_t version = get_byte(pb); /* version */
@@ -371,8 +405,8 @@ static int32_t mov_read_mvhd(MOVContext *c, MOV_atom_t atom)
     }
     else
     {
-        get_be32(pb); /* creation time */
-        get_be32(pb); /* modification time */
+        c->tracks_info.creation_time = get_be32(pb);            /* creation time */
+        uint32_t modification_time = get_be32(pb);  /* modification time */
     }
     c->time_scale = get_be32(pb); /* time scale */
 
@@ -385,10 +419,10 @@ static int32_t mov_read_mvhd(MOVContext *c, MOV_atom_t atom)
 
 static int32_t mov_read_trak(MOVContext *c, MOV_atom_t atom)
 {
-    ALOGV("Reading \'trak\'\n");
+    ALOGV << "Reading \'trak\'" << std::endl;
 
-    c->current_track_index = c->tracks.size();
-    c->tracks.push_back(TrackInfo_t());
+    c->current_track_index = c->tracks_info.tracks.size();
+    c->tracks_info.tracks.push_back(TrackInfo_t());
 
     auto res = mov_read_default(c, atom);
 
@@ -399,7 +433,7 @@ static int32_t mov_read_trak(MOVContext *c, MOV_atom_t atom)
 
 static int32_t mov_read_tkhd(MOVContext *c, MOV_atom_t atom)
 {
-    ALOGV("Reading \'tkhd\'\n");
+    ALOGV << "Reading \'tkhd\'" << std::endl;
 
     FILE *pb = c->fp;
     int32_t version = get_byte(pb);
@@ -430,7 +464,7 @@ static int32_t mov_read_tkhd(MOVContext *c, MOV_atom_t atom)
 
 static int32_t mov_read_mdhd(MOVContext *c, MOV_atom_t atom)
 {
-    ALOGV("Reading \'mdhd\'\n");
+    ALOGV << "Reading \'mdhd\'" << std::endl;
 
     FILE *pb = c->fp;
     int32_t version = get_byte(pb);
@@ -465,7 +499,7 @@ static int32_t mov_read_mdhd(MOVContext *c, MOV_atom_t atom)
 
 static int32_t mov_read_hdlr(MOVContext *c, MOV_atom_t atom)
 {
-    ALOGV("Reading \'hdlr\'\n");
+    ALOGV << "Reading \'hdlr\'" << std::endl;
 
     uint32_t type;
     uint32_t ctype;
@@ -504,7 +538,7 @@ static int32_t mov_read_hdlr(MOVContext *c, MOV_atom_t atom)
 
 static int32_t mov_read_cmov(MOVContext *c, MOV_atom_t atom)
 {
-    ALOGV("Reading \'cmov\'\n");
+    ALOGV << "Reading \'cmov\'" << std::endl;
     return -1; //Not support for compressed mode
 }
 
@@ -512,41 +546,50 @@ static int mov_read_stco(MOVContext *c, MOV_atom_t atom)
 {
     if (c->current_track_index < 0)
     {
-        ALOGV("STCO outside TRAK\n");
+        ALOGV << "STCO outside TRAK" << std::endl;
         return 0;
     }
 
     FILE *pb = c->fp;
 
-    get_byte(pb); /* version */
-    get_be24(pb); /* flags */
+    uint32_t xor_base = get_be32(pb);
+    //get_byte(pb); /* version */
+    //get_be24(pb); /* flags */
 
-    uint32_t entries = get_be32(pb);
+    //if (c->tracks[c->current_track_index].)
+
+    // For ZRAW version and flags fields are used to store XOR base for values
+    if (c->tracks_info.tracks[c->current_track_index].zraw_raw_version != 0x45A32DEF)
+        xor_base = 0x0;
+
+    uint32_t entries = get_be32(pb) ^ xor_base;
     if (!entries)
         return 0;
 
     // FIXME: Here must be check for duplicated 'stco'
 
     if (atom.type == MKTAG('s', 't', 'c', 'o'))
+    {
         for (uint32_t i = 0; i < entries && !feof(pb); i++)
         {
-            if (c->tracks[c->current_track_index].frames.size() < i + 1)
-                c->tracks[c->current_track_index].frames.push_back(FrameInfo_t());
-            c->tracks[c->current_track_index].frames[i].frame_offset = get_be32(pb);
+            if (c->tracks_info.tracks[c->current_track_index].frames.size() < i + 1)
+                c->tracks_info.tracks[c->current_track_index].frames.push_back(FrameInfo_t());
+            c->tracks_info.tracks[c->current_track_index].frames[i].frame_offset = get_be32(pb) ^ xor_base;
         }
+    }
     else if (atom.type == MKTAG('c', 'o', '6', '4'))
         for (uint32_t i = 0; i < entries && !feof(pb); i++)
         {
-            if (c->tracks[c->current_track_index].frames.size() < i + 1)
-                c->tracks[c->current_track_index].frames.push_back(FrameInfo_t());
-            c->tracks[c->current_track_index].frames[i].frame_offset = get_be64(pb);
+            if (c->tracks_info.tracks[c->current_track_index].frames.size() < i + 1)
+                c->tracks_info.tracks[c->current_track_index].frames.push_back(FrameInfo_t());
+            c->tracks_info.tracks[c->current_track_index].frames[i].frame_offset = get_be64(pb);
         }
     else
         return -1;
 
     if (feof(pb))
     {
-        ALOGV("Reached eof, corrupted STCO atom\n");
+        ALOGV << "Reached eof, corrupted STCO atom" << std::endl;
         return -1;
     }
 
@@ -710,22 +753,74 @@ int ff_mov_read_stsd_entries(MOVContext *c, int entries)
         }
         else if (size <= 7)
         {
-            ALOGV("invalid size %" PRId64 " in stsd\n", size);
+            ALOGV << "invalid size " << size << " in stsd" << std::endl;
             return -1;
         }
 
         char tmp[5] = {0};
         *(uint32_t *)&tmp = format;
-        printf("stsd format: %s\n", tmp);
-        c->tracks[c->current_track_index].codec_name = std::string(tmp);
+        ALOGV << "stsd format: " << tmp << std::endl;
+        c->tracks_info.tracks[c->current_track_index].codec_name = std::string(tmp);
 
-        // Here we skip all data that is not handled
+        if (c->tracks_info.tracks[c->current_track_index].codec_name != "zraw")
+        {
+            // Here we skip all data that is not handled
+            FSEEK(pb, start_pos + size);
+            continue;
+        }
+
+        c->tracks_info.tracks[c->current_track_index].codec_type = TrackInfo::Video;
+
+        int ver = get_be16(pb); // version
+        int rev = get_be16(pb); // revision level
+        int ven = get_be32(pb); // vendor
+        int temp_q = get_be32(pb); // temporal quality
+        int spac_q = get_be32(pb); // spatial quality
+        int width = get_be16(pb); // width
+        int height = get_be16(pb); // height
+
+        // Next code is skipped because ZRAW codec does not use these fields
+        //int hor_res = get_be32(pb); // horizontal resolution
+        //int ver_res = get_be32(pb); // vertical resolution
+        //int data_size = get_be32(pb); // data size (always 0)
+        //int frames_per_sample = get_be16(pb); // frames per samples
+        //uint8_t codec_name_len = get_byte(pb); // codec name length (<= 31)
+        //FSKIP(pb, 31); // codec name
+        //get_be16(pb); // depth
+        //get_be16(pb); // colortable id
+
+        FSKIP(pb, 46);
+
+        get_be32(pb);   // SKIP
+        uint32_t subatom_size = get_be32(pb);
+        uint32_t subatom_name = get_be32(pb);
+
+        if(subatom_name == 'zraw')
+        {
+            uint32_t raw_version = get_be32(pb); // raw_version (0x12EA78D2 or 0x45A32DEF)
+            uint32_t unk0 = get_be32(pb); // unknown dword
+            uint32_t unk1 = 0;
+
+            if (subatom_size > 16)
+            {
+                unk1 = get_be32(pb);
+            }
+
+            ALOGV << "\'zraw\' track : [raw_version = 0x" << std::hex << raw_version \
+                << " unk0 = " << std::dec << unk0 << " unk1 = " << unk1 << "]" << std::endl;
+
+            c->tracks_info.tracks[c->current_track_index].zraw_raw_version = raw_version;
+            c->tracks_info.tracks[c->current_track_index].zraw_unk0 = unk0;
+            c->tracks_info.tracks[c->current_track_index].zraw_unk1 = unk1;
+        }
+
+        // Skip all that is not read
         FSEEK(pb, start_pos + size);
     }
 
     if (feof(pb))
     {
-        ALOGV("Reached eof, corrupted STSD atom\n");
+        ALOGV << "Reached eof, corrupted STSD atom" << std::endl;
         return -1;
     }
 
@@ -736,7 +831,7 @@ static int mov_read_stsd(MOVContext *c, MOV_atom_t atom)
 {
     int ret;
 
-    if (c->tracks.size() < 1)
+    if (c->tracks_info.tracks.size() < 1)
         return 0;
 
     FILE *pb = c->fp;
@@ -749,7 +844,7 @@ static int mov_read_stsd(MOVContext *c, MOV_atom_t atom)
     /* Each entry contains a size (4 bytes) and format (4 bytes). */
     if (entries <= 0 || entries > atom.size / 8)
     {
-        ALOGV("invalid STSD entries %d\n", entries);
+        ALOGV << "invalid STSD entries " << entries << std::endl;
         return -1;
     }
 
@@ -775,15 +870,15 @@ static int mov_read_stsz(MOVContext *c, MOV_atom_t atom)
 
     entries = get_be32(pb);
 
-    ALOGV("sample_size = %u sample_count = %u\n", sample_size, entries);
+    ALOGV << "sample_size = " << sample_size << " sample_count = " << entries << std::endl;
 
-    c->tracks[c->current_track_index].universal_sample_size = sample_size > 0 ? sample_size : -1;
+    c->tracks_info.tracks[c->current_track_index].universal_sample_size = sample_size > 0 ? sample_size : -1;
     if (sample_size)
         return 0;
 
     if (field_size != 4 && field_size != 8 && field_size != 16 && field_size != 32)
     {
-        ALOGV("Invalid sample field size %u\n", field_size);
+        ALOGV << "Invalid sample field size %u" << field_size << std::endl;
         return -1;
     }
 
@@ -797,7 +892,7 @@ static int mov_read_stsz(MOVContext *c, MOV_atom_t atom)
     {
         if (feof(pb))
         {
-            ALOGV("Reached eof, corrupted STSZ atom\n");
+            ALOGV << "Reached eof, corrupted STSZ atom" << std::endl;
             return -1;
         }
 
@@ -805,16 +900,16 @@ static int mov_read_stsz(MOVContext *c, MOV_atom_t atom)
         uint32_t sample_size_local = get_be32(pb);
 
         // Add frame if not exists yet
-        if (c->tracks[c->current_track_index].frames.size() < i + 1)
-            c->tracks[c->current_track_index].frames.push_back(FrameInfo_t());
+        if (c->tracks_info.tracks[c->current_track_index].frames.size() < i + 1)
+            c->tracks_info.tracks[c->current_track_index].frames.push_back(FrameInfo_t());
 
         // Save frame (sample) size
-        c->tracks[c->current_track_index].frames[i].frame_size = sample_size_local;
+        c->tracks_info.tracks[c->current_track_index].frames[i].frame_size = sample_size_local;
     }
 
     if (feof(pb))
     {
-        ALOGV("Reached eof, corrupted STSZ atom\n");
+        ALOGV << "Reached eof, corrupted STSZ atom" << std::endl;
         return -1;
     }
 
@@ -892,7 +987,7 @@ int MovAudioOnlyDetect0(const char *url)
     if (mov_read_header(c, 0) != 0)
         return 0;
 
-    ALOGD("has_audio:%d has_video:%d\n", c->has_audio, c->has_video);
+    ALOGD << "has_audio: " << c->has_audio << " has_video: " << c->has_video << std::endl;
 
     fclose(c->fp);
     free(c);
@@ -927,7 +1022,7 @@ int MovAudioOnlyDetect1(int fd, int64_t offset, int64_t length)
         return 0;
     }
 
-    ALOGD("has_audio:%d has_video:%d\n", c->has_audio, c->has_video);
+    ALOGD << "has_audio: " << c->has_audio << " has_video: " << c->has_video << std::endl;
 
     fclose(c->fp);
     free(c);
@@ -936,27 +1031,47 @@ int MovAudioOnlyDetect1(int fd, int64_t offset, int64_t length)
     return (!c->has_video && c->has_audio);
 }
 
-std::vector<TrackInfo_t> MovDetectTracks(const char *url)
+TracksInfo_t MovDetectTracks(const char *url)
 {
-    MOVContext *c;
+    MOVContext context;
+    MOVContext *c = &context;
 
-    c = (MOVContext *)malloc(sizeof(MOVContext));
-    memset(c, 0, sizeof(MOVContext));
+    c->fp = fopen(url, "rb");
+    if (!c->fp)
+        return c->tracks_info;
+
+    if (mov_read_header(c, 0) != 0)
+        return c->tracks_info;
+
+    fclose(c->fp);
+
+    return c->tracks_info;
+}
+
+std::string MovDetectInfo(const char *url)
+{
+    MOVContext context;
+    MOVContext *c = &context;
 
     c->fp = fopen(url, "rb");
     if (!c->fp)
     {
-        free(c);
-        return std::vector<TrackInfo_t>();
+        return "Failed to open input file!";
     }
 
     if (mov_read_header(c, 0) != 0)
-        return std::vector<TrackInfo_t>();
+        return "Failed to read container info!";
 
     fclose(c->fp);
-    free(c);
+    
+    c->string_stream << "MOV container detected!" << std::endl;
+    for (int i = 0; i < c->tracks_info.tracks.size(); ++i)
+        c->string_stream << "stream[" << i << "] = " << c->tracks_info.tracks[i].codec_name << std::endl;
+    c->string_stream << "=======================" << std::endl;
 
-    return c->tracks;
+    std::string res = c->string_stream.str();
+
+    return res;
 }
 
 #include <fstream>
@@ -1016,4 +1131,36 @@ private:
     std::string _filepath;
     std::vector<TrackInfo_t> _tracks;
     std::vector<TrackInfo_t> _zraw_tracks;
+};
+
+class ZrawMovTrackRepresentation
+{
+public:
+    ZrawMovTrackRepresentation(std::istream& f_in, TrackInfo_t &track)
+        : _track(track), _f_in(f_in) {}
+    
+    int zrawStreamFramesCount(uint32_t stream_index)
+    {
+        return _track.frames.size();
+    }
+
+    std::vector<uint8_t> zrawFrame(uint32_t frame_index)
+    {
+        // Extract saved offset and size
+        uint32_t offset = _track.frames[frame_index].frame_offset;
+        uint32_t size = _track.frames[frame_index].frame_size;
+
+        // Seek read position to zraw frame offset
+        _f_in.seekg(offset, _f_in.beg);
+
+        // Read frame
+        std::vector<uint8_t> frame(size);
+        _f_in.read((char *)frame.data(), size);
+
+        return frame;
+    }
+
+private:
+    std::istream& _f_in;
+    TrackInfo_t& _track;
 };

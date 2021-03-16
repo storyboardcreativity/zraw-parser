@@ -4,7 +4,7 @@ TOOLCHAIN :=
 OUT_EXECUTABLE_NAME := zraw_processor
 ARCH :=
 INCS := -Iinclude
-LIBS := -lssl -lcrypto -lstdc++ -lm -L. -lnana
+LIBS := -lssl -lcrypto -lstdc++ -lm -L./lib -lnana -lpthread -lX11 -lXft -lfontconfig -lstdc++fs
 SOURCE_FILES := main.cpp ZRawFrameContainerParserSingletone.cpp ZRawFrameDecompressorSingletone.cpp ZRawFramePreProcessorSingletone.cpp Tools.cpp
 
 all:
