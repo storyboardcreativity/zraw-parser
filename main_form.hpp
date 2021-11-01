@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdarg.h>
+
 #include <nana/system/platform.hpp>
 
 #include <nana/gui.hpp>

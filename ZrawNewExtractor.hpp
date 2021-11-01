@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <string>
+#include <strstream>
 
 #include "MovAvInfoDetect.hpp"
 #include "IConsoleOutput.hpp"
@@ -234,33 +235,22 @@ protected:
             std::string file_path = output_path + "/track_" + std::to_string(track_index) + "_" + std::to_string(i) + ".pgm";
             console.printf("Frame output file path: %s\n", file_path.c_str());
 
-            // Open output file
-            console.printf("Opening output file...");
-            std::fstream f_out(file_path, std::ios::out | std::ios::binary);
-            if (!f_out.is_open())
-            {
-                console.printf("\nFailed to open output file! Skipping frame!\n");
-                continue;
-            }
-            console.printf(" OK!\n");
-
             // Read ZRAW frame data from .ZRAW (.MOV) file
+            console.printf("Reading %d frame...", i);
             auto frame_data = zrawFrame(f_in, track, i);
 
-            // Interpret data as std::istream
-            std::istrstream databuf_stream(reinterpret_cast<const char *>(frame_data.data()), frame_data.size());
+            // Write temporary zraw frame data for our "zraw-decoder" tool
+            console.printf("Saving %d frame's temp data...", i);
+            std::string temp_zraw_frame_path = output_path + "/track_" + std::to_string(track_index) + "_" + std::to_string(i) + "._zraw";
+            std::ofstream fout(temp_zraw_frame_path, std::ios::out | std::ios::binary);
+            fout.write((char*)frame_data.data(), frame_data.size() * sizeof(uint8_t));
+            fout.close();
 
-            // Parse frame container to frame object
-            auto frame = ZRawFrameContainerParserSingletone::Instance().ParseFrame(databuf_stream);
-
-            // Decompress frame to pixels
-            ZRawFrameDecompressorSingletone::Instance().DecompressFrame(frame);
-
-            // Write PGM data to file
-            write_pixels_to_pgm_p5(f_out, frame);
-
-            // Closing frame file
-            f_out.close();
+            // Convert extracted ZRAW frame to DNG
+            console.printf("Converting zraw %d frame to DNG...", i);
+            std::string output_dng_path = output_path + "/track_" + std::to_string(track_index) + "_" + std::to_string(i) + ".dng";
+            std::string command = "./zraw-decoder -i " + temp_zraw_frame_path + " -o " + output_dng_path;
+            system(command.c_str());
         }
     }
 

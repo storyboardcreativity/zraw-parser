@@ -1,0 +1,3 @@
+[submodule "zraw-decoder"]
+	path = zraw-decoder
+	url = https://github.com/storyboardcreativity/zraw-decoder

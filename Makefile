@@ -4,11 +4,22 @@ TOOLCHAIN :=
 OUT_EXECUTABLE_NAME := zraw_processor
 ARCH :=
 INCS := -Iinclude
-LIBS := -lssl -lcrypto -lstdc++ -lm -L./lib -lnana -lpthread -lX11 -lXft -lfontconfig -lstdc++fs
-SOURCE_FILES := main.cpp ZRawFrameContainerParserSingletone.cpp ZRawFrameDecompressorSingletone.cpp ZRawFramePreProcessorSingletone.cpp Tools.cpp
+LIBS := -lssl -lcrypto -lstdc++ -lm -L./lib -lnana -lpthread -lX11 -lXft -lfontconfig -lstdc++fs -lm
+SOURCE_FILES := main.cpp
 
-all:
-	$(TOOLCHAIN)$(CC) $(CFL) $(ARCH) $(SOURCE_FILES) $(INCS) $(LIBS) -o $(OUT_EXECUTABLE_NAME)
+BUILDDIR := build/
+
+all: check-and-reinit-submodules
+	$(MAKE) -C ./zraw-decoder
+	@mkdir -p $(BUILDDIR)
+	cp zraw-decoder/build/* $(BUILDDIR)
+	$(TOOLCHAIN)$(CC) $(CFL) $(ARCH) $(SOURCE_FILES) $(INCS) $(LIBS) -o $(BUILDDIR)$(OUT_EXECUTABLE_NAME)
+
+check-and-reinit-submodules:
+	@if git submodule status | egrep -q '^[-]|^[+]' ; then \
+			echo "INFO: Need to reinitialize git submodules"; \
+			git submodule update --init; \
+	fi
 
 clear:
 	rm -f *.o
