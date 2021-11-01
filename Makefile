@@ -1,11 +1,11 @@
 CC := gcc
-CFL := -ggdb -fPIC -std=c++11
+CFL := -ggdb -fPIC -std=c++11 -Wno-deprecated
 TOOLCHAIN :=
 OUT_EXECUTABLE_NAME := zraw_processor
 ARCH :=
 INCS := -Iinclude
 LIBS := -lssl -lcrypto -lstdc++ -lm -L./lib -lnana -lpthread -lX11 -lXft -lfontconfig -lstdc++fs -lm
-SOURCE_FILES := main.cpp
+SOURCE_FILES := src/main.cpp
 
 BUILDDIR := build/
 

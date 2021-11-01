@@ -26,7 +26,7 @@ public:
         _textbox_console.reset("Storyboard Creativity ZRAW Converter.\nConsole started.\n");
     }
 
-    void printf(char *format, ...)
+    void printf(const char *format, ...)
     {
         // 1. Calculate buffer length
         va_list args;

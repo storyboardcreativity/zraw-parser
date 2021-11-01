@@ -1,6 +1,6 @@
-# ZRAW-Parser
+# zraw-parser
 
-This is a free draft ZRAW decoder clone. Everybody can contribute or use this code anywhere.
+This is a free draft ZRAW decoder. This tool allows to extract ZRAW video files to DNG sequences or HEVC bitstreams (according to camera firmware version).
 
 ### What ZRAW versions are compatible with this software?
 

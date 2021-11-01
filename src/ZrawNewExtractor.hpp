@@ -208,6 +208,8 @@ public:
         console.printf("Closing input file...");
         f_in.close();
         console.printf(" OK!\n");
+
+        return ConversionResult::Done;
     }
 
 protected:
