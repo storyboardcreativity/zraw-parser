@@ -229,30 +229,43 @@ protected:
         return frame;
     }
 
+    std::string exec(const char *cmd)
+    {
+        std::array<char, 128> buffer;
+        std::string result;
+        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+        if (!pipe)
+        {
+            throw std::runtime_error("popen() failed!");
+        }
+        while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
+        {
+            result += buffer.data();
+        }
+        return result;
+    }
+
     void process_zraw_old_raw(IConsoleOutput &console, std::istream &f_in, TrackInfo_t &track, uint32_t track_index, std::string &output_path)
     {
         for (int i = 0; i < track.frames.size(); ++i)
         {
-            // Prepare output file path
-            std::string file_path = output_path + "/track_" + std::to_string(track_index) + "_" + std::to_string(i) + ".pgm";
-            console.printf("Frame output file path: %s\n", file_path.c_str());
-
             // Read ZRAW frame data from .ZRAW (.MOV) file
-            console.printf("Reading %d frame...", i);
+            console.printf("Reading %d frame...\n", i);
             auto frame_data = zrawFrame(f_in, track, i);
 
             // Write temporary zraw frame data for our "zraw-decoder" tool
-            console.printf("Saving %d frame's temp data...", i);
+            console.printf("Saving %d frame's temp data...\n", i);
             std::string temp_zraw_frame_path = output_path + "/track_" + std::to_string(track_index) + "_" + std::to_string(i) + "._zraw";
             std::ofstream fout(temp_zraw_frame_path, std::ios::out | std::ios::binary);
-            fout.write((char*)frame_data.data(), frame_data.size() * sizeof(uint8_t));
+            fout.write((char *)frame_data.data(), frame_data.size() * sizeof(uint8_t));
             fout.close();
 
             // Convert extracted ZRAW frame to DNG
-            console.printf("Converting zraw %d frame to DNG...", i);
+            console.printf("Converting zraw %d frame to DNG...\n", i);
             std::string output_dng_path = output_path + "/track_" + std::to_string(track_index) + "_" + std::to_string(i) + ".dng";
             std::string command = "./zraw-decoder -i " + temp_zraw_frame_path + " -o " + output_dng_path;
-            system(command.c_str());
+            auto output = exec(command.c_str());
+            console.printf(output.c_str());
         }
     }
 

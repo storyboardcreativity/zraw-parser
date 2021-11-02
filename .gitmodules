@@ -1,3 +1,6 @@
 [submodule "zraw-decoder"]
 	path = zraw-decoder
 	url = https://github.com/storyboardcreativity/zraw-decoder
+[submodule "nana"]
+	path = nana
+	url = https://github.com/cnjinhao/nana
