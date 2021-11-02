@@ -17,9 +17,7 @@ https://github.com/FFmpeg/FFmpeg/blob/master/libavformat/mov.c
 #include <malloc.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <linux/types.h>
 #include <limits.h>
-#include <unistd.h>
 #include <vector>
 #include <string>
 #include <inttypes.h>
@@ -128,14 +126,14 @@ typedef struct MOVParseTableEntry
 
 static int32_t get_byte(FILE *s)
 {
-    __u8 t;
+    uint8_t t;
     int32_t t1;
     fread(&t, 1, 1, s);
     t1 = (int32_t)t;
     return t1;
 }
 
-static void get_buffer(FILE *s, __u8 *data, uint32_t len)
+static void get_buffer(FILE *s, uint8_t *data, uint32_t len)
 {
     fread(data, 1, len, s);
     return;
@@ -172,8 +170,8 @@ static uint32_t get_le32(FILE *s)
 //    val_h = get_le32(s) << 32;
 //
 //    if(val_h!=0){
-//		val = INT_MAX;
-//	}
+//        val = INT_MAX;
+//    }
 //    return val;
 //}
 
@@ -992,42 +990,6 @@ int MovAudioOnlyDetect0(const char *url)
     fclose(c->fp);
     free(c);
 
-    return (!c->has_video && c->has_audio);
-}
-
-int MovAudioOnlyDetect1(int fd, int64_t offset, int64_t length)
-{
-    MOVContext *c;
-
-    c = (MOVContext *)malloc(sizeof(MOVContext));
-    memset(c, 0, sizeof(MOVContext));
-    int tmpfd = dup(fd);
-    if (tmpfd < 0)
-    {
-        return 0;
-    }
-    c->fp = fdopen(tmpfd, "rb");
-    if (!c->fp)
-    {
-        free(c);
-        close(tmpfd);
-        return 0;
-    }
-
-    fseek(c->fp, offset, SEEK_SET);
-
-    if (mov_read_header(c, length) != 0)
-    {
-        close(tmpfd);
-        return 0;
-    }
-
-    ALOGD << "has_audio: " << c->has_audio << " has_video: " << c->has_video << std::endl;
-
-    fclose(c->fp);
-    free(c);
-
-    close(tmpfd);
     return (!c->has_video && c->has_audio);
 }
 

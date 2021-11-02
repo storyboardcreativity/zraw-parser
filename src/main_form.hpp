@@ -169,8 +169,8 @@ private:
         auto files = fb();
         if (files.size() == 1)
         {
-            _textbox__current_file.reset(files[0]);
-            _textbox_zraw_info.reset(MovDetectInfo(files[0].c_str()));
+            _textbox__current_file.reset(files[0].string());
+            _textbox_zraw_info.reset(MovDetectInfo(files[0].string().c_str()));
 
             // FIXME: check ZRAW file
             _button__convert.enabled(true);
@@ -185,7 +185,7 @@ private:
 
         auto files = fb();
         if (files.size() == 1)
-            _textbox__output_folder.reset(files[0]);
+            _textbox__output_folder.reset(files[0].string());
     }
 
     void __button_handler__convert(const nana::arg_click &ei)

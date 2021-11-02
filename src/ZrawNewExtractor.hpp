@@ -3,9 +3,18 @@
 #include <fstream>
 #include <string>
 #include <strstream>
+#include <array>
 
 #include "MovAvInfoDetect.hpp"
 #include "IConsoleOutput.hpp"
+
+#ifdef _MSC_VER
+#define popen _popen
+#define pclose _pclose
+
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
 
 uint32_t decode_zraw_block_unk(uint8_t *frame_data, uint8_t *frame_data_out, uint32_t frame_data_size, uint32_t initial_xor)
 {
@@ -263,7 +272,14 @@ protected:
             // Convert extracted ZRAW frame to DNG
             console.printf("Converting zraw %d frame to DNG...\n", i);
             std::string output_dng_path = output_path + "/track_" + std::to_string(track_index) + "_" + std::to_string(i) + ".dng";
-            std::string command = "./zraw-decoder -i " + temp_zraw_frame_path + " -o " + output_dng_path;
+
+#ifdef _MSC_VER
+            std::string command = ".\\zraw-decoder";
+#else
+            std::string command = "./zraw-decoder";
+#endif
+
+            command += " -i " + temp_zraw_frame_path + " -o " + output_dng_path;
             auto output = exec(command.c_str());
             console.printf(output.c_str());
         }
