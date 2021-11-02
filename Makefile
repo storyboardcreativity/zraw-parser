@@ -8,9 +8,13 @@ LIBS := -lssl -lcrypto -lstdc++ -lm -L./lib -lnana -lpthread -lX11 -lXft -lfontc
 SOURCE_FILES := src/main.cpp
 
 BUILDDIR := build/
+LIBDIR := lib/
 
 all: check-and-reinit-submodules
+	$(MAKE) -C ./nana/build/makefile/
 	$(MAKE) -C ./zraw-decoder
+	@mkdir -p $(LIBDIR)
+	cp ./nana/build/bin/libnana.a $(LIBDIR)
 	@mkdir -p $(BUILDDIR)
 	cp zraw-decoder/build/* $(BUILDDIR)
 	$(TOOLCHAIN)$(CC) $(CFL) $(ARCH) $(SOURCE_FILES) $(INCS) $(LIBS) -o $(BUILDDIR)$(OUT_EXECUTABLE_NAME)
