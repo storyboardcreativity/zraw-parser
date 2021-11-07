@@ -5,8 +5,9 @@
 #include <strstream>
 #include <array>
 
-#include "MovAvInfoDetect.hpp"
-#include "IConsoleOutput.hpp"
+#include <MovAvInfoDetect.hpp>
+#include <IConsoleOutput.hpp>
+#include <IProgressBar.hpp>
 
 #ifdef _MSC_VER
 #define popen _popen
@@ -159,39 +160,39 @@ public:
         InputFileOpenFailed
     };
 
-    ConversionResult ProcessConversion(IConsoleOutput &console, std::string zraw_file_path, std::string output_path)
+    ConversionResult ProcessConversion(IConsoleOutput &console, IProgressBar& progressBar, std::string zraw_file_path, std::string output_path)
     {
         console.printf("Converting file %s\n", zraw_file_path.c_str());
         console.printf("Output folder: %s\n", output_path.c_str());
 
         // Get tracks info from input file
-        console.printf("Detecting tracks...");
+        console.printf("Detecting tracks...\n");
+        progressBar.SetDescription("Detecting tracks...");
         auto tracks_info = MovDetectTracks(zraw_file_path.c_str());
-        console.printf(" OK!\n");
 
         // Open input ZRAW file
-        console.printf("Opening input file...");
+        console.printf("Opening input file...\n");
+        progressBar.SetDescription("Opening input file...");
         std::fstream f_in(zraw_file_path, std::ios::in | std::ios::binary);
         if (!f_in.is_open())
         {
-            console.printf("\nFailed to open input file!\n");
+            console.printf("Failed to open input file!\n");
             return InputFileOpenFailed;
         }
-        console.printf(" OK!\n");
 
         // Process each found track
         console.printf("Processing tracks...\n");
+        progressBar.SetDescription("Processing tracks...");
         for (int i = 0; i < tracks_info.tracks.size(); ++i)
         {
             auto &track = tracks_info.tracks[i];
 
-            console.printf("Track #%d (\"%s\")", i, track.codec_name.c_str());
             if (track.codec_name != "zraw")
             {
-                console.printf(" - not \"zraw\", skipped.\n");
+                console.printf("Track #%d (\"%s\") - not ZRAW, skipped.\n", i, track.codec_name.c_str());
                 continue;
             }
-            console.printf(" - processing!\n");
+            console.printf("Track #%d (\"%s\")\n", i, track.codec_name.c_str());
 
             console.printf("ZRAW version = 0x%X (%s)\n", track.zraw_raw_version,
                            track.zraw_raw_version == 0x12EA78D2 ? "TRUE RAW" : (track.zraw_raw_version == 0x45A32DEF ? "ENCRYPTED HEVC" : "UNKNOWN"));
@@ -202,10 +203,10 @@ public:
             switch (track.zraw_raw_version)
             {
             case 0x12EA78D2:
-                process_zraw_old_raw(console, f_in, track, i, output_path);
+                process_zraw_old_raw(console, progressBar, f_in, track, i, output_path);
                 break;
             case 0x45A32DEF:
-                process_zraw_new_raw(console, f_in, track, i, output_path, tracks_info.creation_time);
+                process_zraw_new_raw(console, progressBar, f_in, track, i, output_path, tracks_info.creation_time);
                 break;
             default:
                 console.printf("Can't decode unknown ZRAW version!\n");
@@ -214,9 +215,9 @@ public:
         }
 
         // Close input file
-        console.printf("Closing input file...");
+        console.printf("Closing input file...\n");
+        progressBar.SetDescription("Closing input file...");
         f_in.close();
-        console.printf(" OK!\n");
 
         return ConversionResult::Done;
     }
@@ -254,23 +255,28 @@ protected:
         return result;
     }
 
-    void process_zraw_old_raw(IConsoleOutput &console, std::istream &f_in, TrackInfo_t &track, uint32_t track_index, std::string &output_path)
+    void process_zraw_old_raw(IConsoleOutput &console, IProgressBar& progressBar, std::istream &f_in, TrackInfo_t &track, uint32_t track_index, std::string &output_path)
     {
         for (int i = 0; i < track.frames.size(); ++i)
         {
+            progressBar.ChangePercent(i * (100.0 / track.frames.size()));
+
             // Read ZRAW frame data from .ZRAW (.MOV) file
-            console.printf("Reading %d frame...\n", i);
+            console.printf("Reading frame #%d...\n", i);
+            progressBar.SetDescription("Reading frame #%d...", i);
             auto frame_data = zrawFrame(f_in, track, i);
 
             // Write temporary zraw frame data for our "zraw-decoder" tool
-            console.printf("Saving %d frame's temp data...\n", i);
+            console.printf("Saving frame #%d temp data...\n", i);
+            progressBar.SetDescription("Saving frame #%d temp data...", i);
             std::string temp_zraw_frame_path = output_path + "/track_" + std::to_string(track_index) + "_" + std::to_string(i) + "._zraw";
             std::ofstream fout(temp_zraw_frame_path, std::ios::out | std::ios::binary);
             fout.write((char *)frame_data.data(), frame_data.size() * sizeof(uint8_t));
             fout.close();
 
             // Convert extracted ZRAW frame to DNG
-            console.printf("Converting zraw %d frame to DNG...\n", i);
+            console.printf("Converting zraw frame #%d to DNG...\n", i);
+            progressBar.SetDescription("Converting zraw frame #%d to DNG...", i);
             std::string output_dng_path = output_path + "/track_" + std::to_string(track_index) + "_" + std::to_string(i) + ".dng";
 
 #ifdef _MSC_VER
@@ -281,19 +287,20 @@ protected:
 
             command += " -i " + temp_zraw_frame_path + " -o " + output_dng_path;
             auto output = exec(command.c_str());
+
             console.printf(output.c_str());
         }
     }
 
-    void process_zraw_new_raw(IConsoleOutput &console, std::istream &f_in, TrackInfo_t &track, uint32_t track_index, std::string &output_path, uint32_t xor_value)
+    void process_zraw_new_raw(IConsoleOutput &console, IProgressBar& progressBar, std::istream &f_in, TrackInfo_t &track, uint32_t track_index, std::string &output_path, uint32_t xor_value)
     {
         switch (track.zraw_unk1)
         {
         case 1:
-            process_zraw_XORred(console, f_in, track, track_index, output_path, xor_value);
+            process_zraw_XORred(console, progressBar, f_in, track, track_index, output_path, xor_value);
             break;
         case 0:
-            process_zraw_AESed(console, f_in, track, track_index, output_path);
+            process_zraw_AESed(console, progressBar, f_in, track, track_index, output_path);
             break;
         default:
             console.printf("Can't decrypt unknown ZRAW version!\n");
@@ -301,36 +308,38 @@ protected:
         }
     }
 
-    void process_zraw_AESed(IConsoleOutput &console, std::istream &f_in, TrackInfo_t &track, uint32_t track_index, std::string &output_path)
+    void process_zraw_AESed(IConsoleOutput &console, IProgressBar& progressBar, std::istream &f_in, TrackInfo_t &track, uint32_t track_index, std::string &output_path)
     {
         console.printf("Can't decode AESed version!\n");
     }
 
-    void process_zraw_XORred(IConsoleOutput &console, std::istream &f_in, TrackInfo_t &track, uint32_t track_index, std::string &output_path, uint32_t xor_value)
+    void process_zraw_XORred(IConsoleOutput &console, IProgressBar& progressBar, std::istream &f_in, TrackInfo_t &track, uint32_t track_index, std::string &output_path, uint32_t xor_value)
     {
         // Prepare output file path
         std::string file_path = output_path + "/track_" + std::to_string(track_index) + ".avc";
         console.printf("Track output file path: %s\n", file_path.c_str());
 
         // Open output file
-        console.printf("Opening output file...");
+        console.printf("Opening output file...\n");
+        progressBar.SetDescription("Opening output file...");
         std::fstream f_out(file_path, std::ios::out | std::ios::binary);
         if (!f_out.is_open())
         {
-            console.printf("\nFailed to open output file!\n");
+            console.printf("Failed to open output file!\n");
             return;
         }
-        console.printf(" OK!\n");
 
         // Process each frame in track
         console.printf("Processing frames in track...\n");
+        progressBar.SetDescription("Processing frames in track...");
         for (int p = 0; p < track.frames.size(); ++p)
         {
-            console.printf("Frame %d...", p);
+            progressBar.ChangePercent(p * (100.0 / track.frames.size()));
 
             auto size = track.universal_sample_size == -1 ? track.frames[p].frame_size : track.universal_sample_size;
 
-            console.printf(" (size = %d)", size);
+            console.printf("Frame %d... (size = %d)\n", p, size);
+            progressBar.SetDescription("Processing frame %d...", p, size);
 
             auto data = new uint8_t[size];
 
@@ -344,14 +353,13 @@ protected:
 
             f_out.write((char *)decrypted_data, decrypted_size);
 
+            delete[] data;
             delete[] decrypted_data;
-
-            console.printf(" OK!\n");
         }
 
         // Close output file
-        console.printf("Closing output file...");
+        console.printf("Closing output file...\n");
+        progressBar.SetDescription("Closing output file...");
         f_out.close();
-        console.printf(" OK!\n");
     }
 };

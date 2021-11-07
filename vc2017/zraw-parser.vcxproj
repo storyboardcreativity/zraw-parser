@@ -69,7 +69,18 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(SolutionDir)..\include;$(SolutionDir)..\src;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(SolutionDir)..\include;$(SolutionDir)..\src;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(SolutionDir)..\include;$(SolutionDir)..\src;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(SolutionDir)..\include;$(SolutionDir)..\src;$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -89,13 +100,17 @@
     <PostBuildEvent>
       <Command>SET build_path=$(SolutionDir)..\build
 if not exist "%build_path%" mkdir "%build_path%"
+
 copy /Y "$(SolutionDir)..\zraw-decoder\build\zraw-decoder.exe" "%build_path%\"
 copy /Y "$(OutDir)$(TargetName)$(TargetExt)" "%build_path%\"
-</Command>
+
+if not exist "%build_path%\res" mkdir "%build_path%\res"
+xcopy /e /k /h /i /y $(SolutionDir)..\res $(SolutionDir)..\build\res\</Command>
     </PostBuildEvent>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)..\nana\build\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>nana_$(PlatformToolset)_$(Configuration)_$(PlatformTarget).lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Windows</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -117,13 +132,17 @@ copy /Y "$(OutDir)$(TargetName)$(TargetExt)" "%build_path%\"
     <PostBuildEvent>
       <Command>SET build_path=$(SolutionDir)..\build
 if not exist "%build_path%" mkdir "%build_path%"
+
 copy /Y "$(SolutionDir)..\zraw-decoder\build\zraw-decoder.exe" "%build_path%\"
 copy /Y "$(OutDir)$(TargetName)$(TargetExt)" "%build_path%\"
-</Command>
+
+if not exist "%build_path%\res" mkdir "%build_path%\res"
+xcopy /e /k /h /i /y $(SolutionDir)..\res $(SolutionDir)..\build\res\</Command>
     </PostBuildEvent>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)..\nana\build\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>nana_$(PlatformToolset)_$(Configuration)_$(PlatformTarget).lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Windows</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -144,6 +163,7 @@ copy /Y "$(OutDir)$(TargetName)$(TargetExt)" "%build_path%\"
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)..\nana\build\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>nana_$(PlatformToolset)_$(Configuration)_$(PlatformTarget).lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Windows</SubSystem>
     </Link>
     <PreBuildEvent>
       <Command>git submodule update --init
@@ -153,9 +173,12 @@ copy /Y "$(OutDir)$(TargetName)$(TargetExt)" "%build_path%\"
     <PostBuildEvent>
       <Command>SET build_path=$(SolutionDir)..\build
 if not exist "%build_path%" mkdir "%build_path%"
+
 copy /Y "$(SolutionDir)..\zraw-decoder\build\zraw-decoder.exe" "%build_path%\"
 copy /Y "$(OutDir)$(TargetName)$(TargetExt)" "%build_path%\"
-</Command>
+
+if not exist "%build_path%\res" mkdir "%build_path%\res"
+xcopy /e /k /h /i /y $(SolutionDir)..\res $(SolutionDir)..\build\res\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -176,6 +199,7 @@ copy /Y "$(OutDir)$(TargetName)$(TargetExt)" "%build_path%\"
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)..\nana\build\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>nana_$(PlatformToolset)_$(Configuration)_$(PlatformTarget).lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Windows</SubSystem>
     </Link>
     <PreBuildEvent>
       <Command>git submodule update --init
@@ -185,20 +209,42 @@ copy /Y "$(OutDir)$(TargetName)$(TargetExt)" "%build_path%\"
     <PostBuildEvent>
       <Command>SET build_path=$(SolutionDir)..\build
 if not exist "%build_path%" mkdir "%build_path%"
+
 copy /Y "$(SolutionDir)..\zraw-decoder\build\zraw-decoder.exe" "%build_path%\"
 copy /Y "$(OutDir)$(TargetName)$(TargetExt)" "%build_path%\"
-</Command>
+
+if not exist "%build_path%\res" mkdir "%build_path%\res"
+xcopy /e /k /h /i /y $(SolutionDir)..\res $(SolutionDir)..\build\res\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\AboutTabUserControl.hpp" />
     <ClInclude Include="..\src\byteswap.hpp" />
+    <ClInclude Include="..\src\DebugTabUserControl.hpp" />
+    <ClInclude Include="..\src\FileSelectionPresenter.hpp" />
+    <ClInclude Include="..\src\FileSelectionUserControl.hpp" />
     <ClInclude Include="..\src\IConsoleOutput.hpp" />
-    <ClInclude Include="..\src\main_form.hpp" />
+    <ClInclude Include="..\src\IConsoleView.hpp" />
+    <ClInclude Include="..\src\IFileSelectionView.hpp" />
+    <ClInclude Include="..\src\IFormView.hpp" />
+    <ClInclude Include="..\src\IInputFileInfoView.hpp" />
+    <ClInclude Include="..\src\InputFileInfoPresenter.hpp" />
+    <ClInclude Include="..\src\InputFileInfoUserControl.hpp" />
+    <ClInclude Include="..\src\IProgressBar.hpp" />
+    <ClInclude Include="..\src\MainFormPanelPresenter.hpp" />
+    <ClInclude Include="..\src\IMainFormPanelView.hpp" />
+    <ClInclude Include="..\src\IUserControl.hpp" />
+    <ClInclude Include="..\src\IView.hpp" />
+    <ClInclude Include="..\src\MainForm.hpp" />
+    <ClInclude Include="..\src\MainFormPanel.hpp" />
     <ClInclude Include="..\src\MovAvInfoDetect.hpp" />
+    <ClInclude Include="..\src\Version.hpp" />
+    <ClInclude Include="..\src\ZrawConverter.hpp" />
     <ClInclude Include="..\src\ZrawNewExtractor.hpp" />
+    <ClInclude Include="..\src\ZrawProcessingModel.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
