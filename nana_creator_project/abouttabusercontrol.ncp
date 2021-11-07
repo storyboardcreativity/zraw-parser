@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<nana-creator version="0.32.0">
+	<panel mainclass="true" filename="AboutTabUserControl" rel_path="true" work_dir="" type="panel" name="AboutTabUserControl" enabled="true" width="640" height="480" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" margin="5,5,5,5" gap="2">
+		<field type="field" name="field1" weight="-1" layout="1" margin="5,5,5,5" gap="2">
+			<panel type="panel" name="panel1" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" weight="10" margin="5,5,5,5" gap="2" />
+			<panel type="panel" name="panel2" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" weight="146" margin="5,5,5,5" gap="2">
+				<field type="field" name="field2" weight="-1" layout="0" margin="0,0,0,0" gap="2">
+					<panel type="panel" name="panel3" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" weight="9%" margin="5,5,5,5" gap="2" />
+					<panel type="panel" name="panel31" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" weight="-1" margin="0,0,0,0" gap="2">
+						<picture type="picture" name="picture1" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" weight="-1" image="G:\git\zraw-parser\res\about_logo.png" transparent="false" halign="0" valign="0" stretchable="true" gradualbg="false" gbg_from="255,255,255" gbg_to="0,0,0" gbg_dir="0" />
+					</panel>
+					<panel type="panel" name="panel311" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" weight="9%" margin="5,5,5,5" gap="2" />
+				</field>
+			</panel>
+			<panel type="panel" name="panel21" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" weight="-1" margin="0,0,0,0" gap="2">
+				<field type="field" name="field3" weight="-1" layout="1" margin="0,0,0,0" gap="2">
+					<label type="label" name="label1" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" f_size="9" f_weight="400" f_italic="false" f_underline="false" f_strike_out="false" weight="30" caption="ZRAW Parser for Windows v0.0.1" format="false" transparent="false" halign="1" valign="1" />
+					<panel type="panel" name="panel4" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" weight="-1" margin="5,5,5,5" gap="2">
+						<field type="field" name="field4" weight="-1" layout="0" margin="5,5,5,5" gap="2">
+							<panel type="panel" name="panel5" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" weight="50" margin="5,5,5,5" gap="2" />
+							<textbox type="textbox" name="textbox1" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" f_size="9" f_weight="1000" f_italic="false" f_underline="false" f_strike_out="false" weight="-1" caption="ZRAW Parser is a free, open-source solution that allows raw data extraction from ZRAW video files . If you like it, please consider contributing to my open-source development efforts with a donation." tip_string="" editable="false" line_wrapped="true" multi_lines="true" focus_behavior="0" select_behavior="false" undo_length="30" halign="1" selection="51,153,255" selection_unfocused="240,240,240" selection_text="255,255,255" />
+							<panel type="panel" name="panel6" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" weight="50" margin="5,5,5,5" gap="2" />
+						</field>
+					</panel>
+					<label type="label" name="label3" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" f_size="9" f_weight="400" f_italic="false" f_underline="false" f_strike_out="false" weight="-1" caption="Click here to buy me a coffee" format="false" transparent="false" halign="1" valign="1" />
+				</field>
+			</panel>
+		</field>
+	</panel>
+</nana-creator>

@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<nana-creator version="0.32.0">
+	<panel mainclass="true" filename="InputFileInfoUserControl" rel_path="true" work_dir="" type="panel" name="InputFileInfoUserControl" enabled="true" width="640" height="480" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" margin="5,5,5,5" gap="2">
+		<field type="field" name="_field1" weight="-1" layout="1" margin="5,5,5,5" gap="2">
+			<panel type="panel" name="_panel1" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" weight="20" margin="5,5,5,5" gap="2" />
+			<listbox type="listbox" name="InfoListBox" enabled="true" bgcolor="255,255,255" fgcolor="0,0,0" f_size="9" f_weight="400" f_italic="false" f_underline="false" f_strike_out="false" weight="-1" columns="" checkable="false" single_selection="false" sortable="true" show_header="true" header_bgcolor="241,242,244" header_fgcolor="0,0,0" header_grabbed="139,214,246" header_floated="186,187,188" item_selected="204,232,255" item_highlighted="229,243,255" selection_box="51,153,255" max_fit_content="0" min_column_width="20" text_margin="5" item_height_ex="6" header_splitter_area_before="2" header_splitter_area_after="3" header_padding_top="3" header_padding_bottom="3" />
+			<panel type="panel" name="_panel2" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" weight="10" margin="5,5,5,5" gap="2" />
+		</field>
+	</panel>
+</nana-creator>

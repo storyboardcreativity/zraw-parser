@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<nana-creator version="0.32.0">
+	<panel mainclass="true" filename="FileSelectionUserControl" rel_path="true" work_dir="" type="panel" name="FileSelectionUserControl" enabled="true" width="640" height="480" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" margin="5,5,5,5" gap="2">
+		<field type="field" name="field1" weight="-1" layout="1" margin="5,5,5,5" gap="2">
+			<panel type="panel" name="panel1" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" weight="20" margin="5,5,5,5" gap="2" />
+			<panel type="panel" name="panel2" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" weight="160" margin="5,5,5,5" gap="2">
+				<field type="field" name="field2" weight="-1" layout="0" margin="5,5,5,5" gap="2">
+					<panel type="panel" name="panel3" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" weight="40" margin="5,5,5,5" gap="2" />
+					<group type="group" name="group1" enabled="true" bgcolor="201,197,190" fgcolor="0,0,0" f_size="9" f_weight="400" f_italic="false" f_underline="false" f_strike_out="false" caption="In/Out settings" format="false" halign="0" layout="0" weight="-1" margin="0,0,0,0" gap="2">
+						<panel type="panel" name="panel32" enabled="true" bgcolor="201,197,190" fgcolor="0,0,0" transparent="false" layout="0" weight="-1" margin="0,0,0,0" gap="2">
+							<field type="field" name="field3" weight="-1" layout="1" margin="0,0,0,0" gap="2">
+								<panel type="panel" name="panel4" enabled="true" bgcolor="201,197,190" fgcolor="0,0,0" transparent="true" layout="0" weight="-1" margin="5,5,5,5" gap="2">
+									<field type="field" name="field4" weight="-1" layout="0" margin="5,5,5,5" gap="2">
+										<label type="label" name="label1" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" f_size="9" f_weight="400" f_italic="false" f_underline="false" f_strike_out="false" weight="100" caption="ZRAW file:" format="false" transparent="true" halign="1" valign="1" />
+										<textbox type="textbox" name="InputFileTextBox" enabled="true" bgcolor="255,255,255" fgcolor="0,0,0" f_size="9" f_weight="400" f_italic="false" f_underline="false" f_strike_out="false" weight="-1" caption="" tip_string="" editable="true" line_wrapped="false" multi_lines="false" focus_behavior="0" select_behavior="false" undo_length="30" halign="0" selection="51,153,255" selection_unfocused="240,240,240" selection_text="255,255,255" />
+										<button type="button" name="OpenFileButton" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" f_size="9" f_weight="400" f_italic="false" f_underline="false" f_strike_out="false" weight="100" caption="Open" icon="" enable_pushed="false" pushed="false" transparent="false" />
+									</field>
+								</panel>
+								<panel type="panel" name="panel5" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" weight="-1" margin="5,5,5,5" gap="2">
+									<field type="field" name="field5" weight="-1" layout="0" margin="5,5,5,5" gap="2">
+										<label type="label" name="label11" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" f_size="9" f_weight="400" f_italic="false" f_underline="false" f_strike_out="false" weight="100" caption="Output path:" format="false" transparent="false" halign="1" valign="1" />
+										<textbox type="textbox" name="OutputPathTextBox" enabled="true" bgcolor="255,255,255" fgcolor="0,0,0" f_size="9" f_weight="400" f_italic="false" f_underline="false" f_strike_out="false" weight="-1" caption="" tip_string="" editable="true" line_wrapped="false" multi_lines="false" focus_behavior="0" select_behavior="false" undo_length="30" halign="0" selection="51,153,255" selection_unfocused="240,240,240" selection_text="255,255,255" />
+										<button type="button" name="SelectOutputPathButton" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" f_size="9" f_weight="400" f_italic="false" f_underline="false" f_strike_out="false" weight="100" caption="Select" icon="" enable_pushed="false" pushed="false" transparent="false" />
+									</field>
+								</panel>
+								<panel type="panel" name="panel6" enabled="true" bgcolor="201,197,190" fgcolor="0,0,0" transparent="false" layout="0" weight="25" margin="5,5,5,20" gap="2">
+									<label type="label" name="label2" enabled="true" bgcolor="201,197,190" fgcolor="0,0,0" f_size="9" f_weight="400" f_italic="false" f_underline="false" f_strike_out="false" weight="40" caption="Status:" format="false" transparent="false" halign="0" valign="0" />
+									<label type="label" name="label3" enabled="true" bgcolor="201,197,190" fgcolor="0,100,0" f_size="9" f_weight="400" f_italic="false" f_underline="false" f_strike_out="false" weight="-1" caption="EMPTY" format="false" transparent="false" halign="0" valign="0" />
+								</panel>
+							</field>
+						</panel>
+					</group>
+					<panel type="panel" name="panel31" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" weight="40" margin="5,5,5,5" gap="2" />
+				</field>
+			</panel>
+			<panel type="panel" name="panel21" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" weight="-1" margin="5,5,5,5" gap="2" />
+		</field>
+	</panel>
+</nana-creator>

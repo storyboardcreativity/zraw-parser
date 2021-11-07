@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<nana-creator version="0.32.0">
+	<form mainclass="true" filename="MainForm" rel_path="true" work_dir="" type="form" name="MainForm" enabled="true" caption="Form" icon="" width="640" height="480" zoom="false" bgcolor="212,208,200" fgcolor="0,0,0" decoration="true" taskbar="true" floating="false" no_activate="false" min="false" max="false" sizable="false" layout="0" margin="5,5,5,5" gap="2" />
+</nana-creator>

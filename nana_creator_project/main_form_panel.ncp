@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<nana-creator version="0.32.0">
+	<panel mainclass="true" filename="main_form_panel" rel_path="true" work_dir="" type="panel" name="MainFormPanel" enabled="true" width="640" height="480" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" margin="5,5,5,5" gap="2">
+		<field type="field" name="field1" weight="-1" layout="1" margin="0,0,0,0" gap="0">
+			<field type="field" name="field2" weight="-1" layout="1" margin="0,0,0,0" gap="2">
+				<field type="field" name="field4" weight="25" layout="0" margin="0,0,0,0" gap="2">
+					<tabbar type="tabbar" name="TabBar" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" f_size="9" f_weight="400" f_italic="false" f_underline="false" f_strike_out="false" weight="-1" tabs="" activated="0" addbtn="false" closebtn="false" closefly="false" listbtn="false" scrollbtn="true" />
+				</field>
+				<field type="field" name="field41" weight="-1" layout="0" margin="5,5,5,5" gap="2" />
+			</field>
+			<field type="field" name="field3" weight="60" layout="0" margin="5,5,5,5" gap="2">
+				<panel type="panel" name="_panel1" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="1" weight="-1" margin="0,5,0,5" gap="2">
+					<panel type="panel" name="_panel2" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" transparent="false" layout="0" weight="-1" margin="5,5,5,5" gap="2">
+						<label type="label" name="_label1" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" f_size="9" f_weight="400" f_italic="false" f_underline="false" f_strike_out="false" weight="30" caption="Now:" format="false" transparent="false" halign="0" valign="0" />
+						<label type="label" name="ProgressDescriptionLabel" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" f_size="9" f_weight="400" f_italic="false" f_underline="false" f_strike_out="false" weight="-1" caption="Idle." format="false" transparent="false" halign="0" valign="0" />
+						<label type="label" name="PercentLabel" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" f_size="9" f_weight="400" f_italic="false" f_underline="false" f_strike_out="false" weight="30" caption="100%" format="false" transparent="false" halign="2" valign="0" />
+					</panel>
+					<progress type="progress" name="ProgressBar" enabled="true" bgcolor="212,208,200" fgcolor="16,117,21" f_size="9" f_weight="400" f_italic="false" f_underline="false" f_strike_out="false" weight="-1" value="90" amount="100" unknown="false" />
+				</panel>
+				<button type="button" name="ProcessButton" enabled="true" bgcolor="212,208,200" fgcolor="0,0,0" f_size="9" f_weight="400" f_italic="false" f_underline="false" f_strike_out="false" weight="100" caption="Cancel" icon="" enable_pushed="false" pushed="false" transparent="false" />
+			</field>
+		</field>
+	</panel>
+</nana-creator>
