@@ -73,6 +73,12 @@ protected:
 
     void OnProcessButtonClick()
     {
+        if (_converter.IsProcessing())
+        {
+            _converter.InterruptProcess();
+            return;
+        }
+
         _mfp.ChangeProcessButtonText("Cancel");
 
         _fsp.SetActivity(false);

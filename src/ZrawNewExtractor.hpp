@@ -3,19 +3,17 @@
 #include <fstream>
 #include <string>
 #include <strstream>
-#include <array>
+#include <atomic>
 
 #include <MovAvInfoDetect.hpp>
 #include <IConsoleOutput.hpp>
 #include <IProgressBar.hpp>
 
-#ifdef _MSC_VER
-#define popen _popen
-#define pclose _pclose
+#define TINY_DNG_WRITER_IMPLEMENTATION
+#include <tiny_dng_writer.h>
 
-#include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
-#endif
+#define LIB_ZRAW_STATIC
+#include <libzraw.h>
 
 uint32_t decode_zraw_block_unk(uint8_t *frame_data, uint8_t *frame_data_out, uint32_t frame_data_size, uint32_t initial_xor)
 {
@@ -157,10 +155,13 @@ public:
     enum ConversionResult
     {
         Done,
-        InputFileOpenFailed
+        InputFileOpenFailed,
+        OutputFileOpenFailed,
+        Interrupted,
+        NotImplemented
     };
 
-    ConversionResult ProcessConversion(IConsoleOutput &console, IProgressBar& progressBar, std::string zraw_file_path, std::string output_path)
+    ConversionResult ProcessConversion(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput &console, IProgressBar& progressBar, std::string zraw_file_path, std::string output_path)
     {
         console.printf("Converting file %s\n", zraw_file_path.c_str());
         console.printf("Output folder: %s\n", output_path.c_str());
@@ -169,6 +170,9 @@ public:
         console.printf("Detecting tracks...\n");
         progressBar.SetDescription("Detecting tracks...");
         auto tracks_info = MovDetectTracks(zraw_file_path.c_str());
+
+        if (itsTimeToStopOkay)
+            return Interrupted;
 
         // Open input ZRAW file
         console.printf("Opening input file...\n");
@@ -185,6 +189,12 @@ public:
         progressBar.SetDescription("Processing tracks...");
         for (int i = 0; i < tracks_info.tracks.size(); ++i)
         {
+            if (itsTimeToStopOkay)
+            {
+                f_in.close();
+                return Interrupted;
+            }
+
             auto &track = tracks_info.tracks[i];
 
             if (track.codec_name != "zraw")
@@ -200,17 +210,24 @@ public:
             console.printf("ZRAW unk0 = %d\n", track.zraw_unk0);
             console.printf("ZRAW unk1 = %d\n", track.zraw_unk1);
 
+            ConversionResult subRes = Done;
             switch (track.zraw_raw_version)
             {
             case 0x12EA78D2:
-                process_zraw_old_raw(console, progressBar, f_in, track, i, output_path);
+                subRes = process_zraw_old_raw(itsTimeToStopOkay, console, progressBar, f_in, track, i, output_path);
                 break;
             case 0x45A32DEF:
-                process_zraw_new_raw(console, progressBar, f_in, track, i, output_path, tracks_info.creation_time);
+                subRes = process_zraw_new_raw(itsTimeToStopOkay, console, progressBar, f_in, track, i, output_path, tracks_info.creation_time);
                 break;
             default:
                 console.printf("Can't decode unknown ZRAW version!\n");
-                break;
+                subRes = NotImplemented;
+            }
+
+            if (subRes != Done)
+            {
+                f_in.close();
+                return subRes;
             }
         }
 
@@ -239,26 +256,120 @@ protected:
         return frame;
     }
 
-    std::string exec(const char *cmd)
+    void process_dng(IConsoleOutput &console, IProgressBar& progressBar, std::vector<uint8_t>& buffer, std::string outputRawFilePath)
     {
-        std::array<char, 128> buffer;
-        std::string result;
-        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
-        if (!pipe)
+        // Create ZRAW decoder
+        auto decoder = zraw_decoder__create();
+
+        // Read frame from buffer
+        progressBar.SetDescription("Fetching ZRAW frame info - %s", outputRawFilePath.c_str());
+        auto reading_state = zraw_decoder__read_hisi_frame(decoder, buffer.data(), buffer.size());
+
+        zraw_frame_info_t frame_info;
+        auto info_state = zraw_decoder__get_hisi_frame_info(decoder, frame_info);
+
+        // Decode frame
+        progressBar.SetDescription("Decompressing ZRAW CFA - %s", outputRawFilePath.c_str());
+        auto decompression_state = zraw_decoder__decompress_hisi_frame(decoder);
+
+        tinydngwriter::DNGImage dng_image;
+        dng_image.SetBigEndian(false);
+
+        dng_image.SetSubfileType(false, false, false);
+        dng_image.SetImageWidth(frame_info.width_in_photodiodes);
+        dng_image.SetImageLength(frame_info.height_in_photodiodes);
+        dng_image.SetRowsPerStrip(frame_info.height_in_photodiodes);
+        dng_image.SetSamplesPerPixel(1);
+
+        // Bits Per Photodiode value
+        uint16_t bps[1] = { (uint16_t)frame_info.bits_per_photodiode_value };
+        dng_image.SetBitsPerSample(1, bps);
+
+        dng_image.SetPlanarConfig(tinydngwriter::PLANARCONFIG_CONTIG);
+        dng_image.SetCompression(tinydngwriter::COMPRESSION_NONE);
+        dng_image.SetPhotometric(tinydngwriter::PHOTOMETRIC_CFA);
+        dng_image.SetXResolution(300.0);
+        dng_image.SetYResolution(300.0);
+        dng_image.SetOrientation(tinydngwriter::ORIENTATION_TOPLEFT);
+        dng_image.SetResolutionUnit(tinydngwriter::RESUNIT_NONE);
+        dng_image.SetImageDescription("[Storyboard Creativity] ZRAW -> DNG converter generated image.");
+
+        dng_image.SetUniqueCameraModel("Z CAM E2");
+
+        // CM1
+        double matrix1[] =
         {
-            throw std::runtime_error("popen() failed!");
-        }
-        while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
+            0.9784, -0.4995, 0.003,
+            -0.3625, 1.1454, 0.2475,
+            -0.0961, 0.2097, 0.6377
+        };
+        dng_image.SetColorMatrix1(3, matrix1);
+        dng_image.SetCalibrationIlluminant1(17);
+
+        // CM2
+        double matrix2[] =
         {
-            result += buffer.data();
-        }
-        return result;
+            0.6770, -0.1895, -0.0744,
+            -0.5232, 1.3145, 0.2303,
+            -0.1664, 0.2691, 0.5703
+        };
+        dng_image.SetColorMatrix2(3, matrix2);
+        dng_image.SetCalibrationIlluminant2(21);
+
+        // We set analog WB as neutral
+        double analog_balance[] = { 1.0, 1.0, 1.0 };
+        dng_image.SetAnalogBalance(3, analog_balance);
+
+        // We set post WB according to awb(or wb) gains
+        double rgain = frame_info.awb_gain_r;
+        double ggain = frame_info.awb_gain_g;
+        double bgain = frame_info.awb_gain_b;
+        double wbalance[3] =
+        {
+            (1.0 * ggain / rgain),
+            (1.0),
+            (1.0 * ggain / bgain)
+        };
+        dng_image.SetAsShotNeutral(3, wbalance);
+
+        // Black Levels
+        dng_image.SetBlackLevelRepeatDim(2, 2);
+        dng_image.SetBlackLevel(4, frame_info.cfa_black_levels);
+
+        dng_image.SetDNGVersion(1, 2, 0, 0);
+
+        dng_image.SetCFARepeatPatternDim(2, 2);
+
+        uint8_t cfa_pattern[4] = { 0, 1, 1, 2 };
+        dng_image.SetCFAPattern(4, cfa_pattern);
+
+        double white_levels[1] = { (double)((1 << frame_info.bits_per_photodiode_value) - 1) };
+        dng_image.SetWhiteLevelRational(1, white_levels);
+
+        // Get CFA data
+        progressBar.SetDescription("Saving DNG file - %s", outputRawFilePath.c_str());
+        std::vector<uint16_t> image_data(frame_info.width_in_photodiodes * frame_info.height_in_photodiodes);
+        auto cfa_state = zraw_decoder__get_decompressed_CFA(decoder, image_data.data(), image_data.size() * sizeof(uint16_t));
+
+        // Release ZRAW decoder
+        zraw_decoder__free(decoder);
+
+        dng_image.SetImageDataPacked(image_data.data(), image_data.size(), frame_info.bits_per_photodiode_value, true);
+
+        tinydngwriter::DNGWriter dng_writer(false);
+        dng_writer.AddImage(&dng_image);
+
+        std::string err;
+        dng_writer.WriteToFile(outputRawFilePath.c_str(), &err);
     }
 
-    void process_zraw_old_raw(IConsoleOutput &console, IProgressBar& progressBar, std::istream &f_in, TrackInfo_t &track, uint32_t track_index, std::string &output_path)
+    ConversionResult process_zraw_old_raw(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput &console, IProgressBar& progressBar, std::istream &f_in, TrackInfo_t &track, uint32_t track_index, std::string &output_path)
     {
         for (int i = 0; i < track.frames.size(); ++i)
         {
+            if (itsTimeToStopOkay)
+                return Interrupted;
+
             progressBar.ChangePercent(i * (100.0 / track.frames.size()));
 
             // Read ZRAW frame data from .ZRAW (.MOV) file
@@ -266,54 +377,38 @@ protected:
             progressBar.SetDescription("Reading frame #%d...", i);
             auto frame_data = zrawFrame(f_in, track, i);
 
-            // Write temporary zraw frame data for our "zraw-decoder" tool
-            console.printf("Saving frame #%d temp data...\n", i);
-            progressBar.SetDescription("Saving frame #%d temp data...", i);
-            std::string temp_zraw_frame_path = output_path + "/track_" + std::to_string(track_index) + "_" + std::to_string(i) + "._zraw";
-            std::ofstream fout(temp_zraw_frame_path, std::ios::out | std::ios::binary);
-            fout.write((char *)frame_data.data(), frame_data.size() * sizeof(uint8_t));
-            fout.close();
-
             // Convert extracted ZRAW frame to DNG
             console.printf("Converting zraw frame #%d to DNG...\n", i);
             progressBar.SetDescription("Converting zraw frame #%d to DNG...", i);
             std::string output_dng_path = output_path + "/track_" + std::to_string(track_index) + "_" + std::to_string(i) + ".dng";
-
-#ifdef _MSC_VER
-            std::string command = ".\\zraw-decoder";
-#else
-            std::string command = "./zraw-decoder";
-#endif
-
-            command += " -i " + temp_zraw_frame_path + " -o " + output_dng_path;
-            auto output = exec(command.c_str());
-
-            console.printf(output.c_str());
+            process_dng(console, progressBar, frame_data, output_dng_path);
         }
+
+        return Done;
     }
 
-    void process_zraw_new_raw(IConsoleOutput &console, IProgressBar& progressBar, std::istream &f_in, TrackInfo_t &track, uint32_t track_index, std::string &output_path, uint32_t xor_value)
+    ConversionResult process_zraw_new_raw(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput &console, IProgressBar& progressBar, std::istream &f_in, TrackInfo_t &track, uint32_t track_index, std::string &output_path, uint32_t xor_value)
     {
         switch (track.zraw_unk1)
         {
         case 1:
-            process_zraw_XORred(console, progressBar, f_in, track, track_index, output_path, xor_value);
-            break;
+            return process_zraw_XORred(itsTimeToStopOkay, console, progressBar, f_in, track, track_index, output_path, xor_value);
+
         case 0:
-            process_zraw_AESed(console, progressBar, f_in, track, track_index, output_path);
-            break;
-        default:
-            console.printf("Can't decrypt unknown ZRAW version!\n");
-            break;
+            return process_zraw_AESed(itsTimeToStopOkay, console, progressBar, f_in, track, track_index, output_path);
         }
+
+        console.printf("Can't decrypt unknown ZRAW version!\n");
+        return NotImplemented;
     }
 
-    void process_zraw_AESed(IConsoleOutput &console, IProgressBar& progressBar, std::istream &f_in, TrackInfo_t &track, uint32_t track_index, std::string &output_path)
+    ConversionResult process_zraw_AESed(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput &console, IProgressBar& progressBar, std::istream &f_in, TrackInfo_t &track, uint32_t track_index, std::string &output_path)
     {
         console.printf("Can't decode AESed version!\n");
+        return NotImplemented;
     }
 
-    void process_zraw_XORred(IConsoleOutput &console, IProgressBar& progressBar, std::istream &f_in, TrackInfo_t &track, uint32_t track_index, std::string &output_path, uint32_t xor_value)
+    ConversionResult process_zraw_XORred(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput &console, IProgressBar& progressBar, std::istream &f_in, TrackInfo_t &track, uint32_t track_index, std::string &output_path, uint32_t xor_value)
     {
         // Prepare output file path
         std::string file_path = output_path + "/track_" + std::to_string(track_index) + ".avc";
@@ -326,7 +421,7 @@ protected:
         if (!f_out.is_open())
         {
             console.printf("Failed to open output file!\n");
-            return;
+            return OutputFileOpenFailed;
         }
 
         // Process each frame in track
@@ -334,6 +429,12 @@ protected:
         progressBar.SetDescription("Processing frames in track...");
         for (int p = 0; p < track.frames.size(); ++p)
         {
+            if (itsTimeToStopOkay)
+            {
+                f_out.close();
+                return Interrupted;
+            }
+
             progressBar.ChangePercent(p * (100.0 / track.frames.size()));
 
             auto size = track.universal_sample_size == -1 ? track.frames[p].frame_size : track.universal_sample_size;
@@ -361,5 +462,7 @@ protected:
         console.printf("Closing output file...\n");
         progressBar.SetDescription("Closing output file...");
         f_out.close();
+
+        return Done;
     }
 };
