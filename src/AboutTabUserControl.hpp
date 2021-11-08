@@ -5,6 +5,12 @@
 #include <nana/gui/widgets/picture.hpp>
 #include <nana/gui/widgets/label.hpp>
 
+#ifdef _MSC_VER
+#include <Windows.h>
+#else
+
+#endif
+
 #include "IUserControl.hpp"
 #include "Version.hpp"
 
@@ -61,6 +67,7 @@ private:
             picture1.load(nana::paint::image("res/about_logo.bmp"));
             picture1.align(static_cast<nana::align>(0), static_cast<nana::align_v>(0));
             picture1.stretchable(true);
+
             // panel311
             panel311.create(panel2);
             panel2_place_["field2"] << panel311;
@@ -72,7 +79,7 @@ private:
             // label1
             label1.create(panel21);
             panel21_place_["field3"] << label1;
-            label1.caption(std::string("ZRAW Parser for Windows v") + std::string(ZRAW_PARSER_VERSION_STRING));
+            label1.caption(std::string("ZRAW Parser for Windows v") + std::string(ZRAW_PARSER_VERSION_STRING) + "\nby Zaripov R.");
             label1.text_align(static_cast<nana::align>(1), static_cast<nana::align_v>(1));
             // panel4
             panel4.create(panel21);
@@ -92,10 +99,18 @@ private:
             panel6.create(panel4);
             panel4_place_["field4"] << panel6;
             // label3
-            label3.create(panel21);
-            panel21_place_["field3"] << label3;
-            label3.caption("Click here to buy me a coffee");
-            label3.text_align(static_cast<nana::align>(1), static_cast<nana::align_v>(1));
+            linkButton_.create(panel21);
+            panel21_place_["field3"] << linkButton_;
+            linkButton_.caption("Click here to support ZRAW tools development");
+            linkButton_.events().click([]()
+            {
+#ifdef _MSC_VER
+                ShellExecute(NULL, L"open", L"https://ko-fi.com/storyboardcreativity", NULL, NULL, SW_SHOWNORMAL);
+#else
+                system("xdg-open https://ko-fi.com/storyboardcreativity");
+#endif
+                
+            });
 
             initialized_ = true;
         }
@@ -125,7 +140,7 @@ protected:
     nana::panel<true> panel5;
     nana::label label4;
     nana::panel<true> panel6;
-    nana::label label3;
+    nana::button linkButton_;
 
     // ===
 
