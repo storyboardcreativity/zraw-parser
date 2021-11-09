@@ -25,7 +25,10 @@ public:
         this->create(wd, r, visible);
     }
 
-    ~AboutTabUserControl() = default;
+    ~AboutTabUserControl()
+    {
+        delete drawing_;
+    }
 
     bool create(nana::window wd, const nana::rectangle& r = {}, bool visible = true)
     {
@@ -44,14 +47,14 @@ private:
         if (!initialized_)
         {
             place_.bind(*this);
-            place_.div("margin=[5,5,5,5] <vert margin=[5,5,5,5] gap=2 arrange=[10,160,variable] field1>");
+            place_.div("margin=[5,5,5,5] <vert margin=[5,5,5,5] gap=2 arrange=[10,146,variable] field1>");
             // panel1
             panel1.create(*this);
             place_["field1"] << panel1;
             // panel2
             panel2.create(*this);
             panel2_place_.bind(panel2);
-            panel2_place_.div("weight=146 margin=[5,5,5,5] <margin=[0,0,0,0] gap=2 arrange=[9%,variable,9%] field2>");
+            panel2_place_.div("weight=146 margin=[5,5,5,5] <margin=[0,0,0,0] gap=2 arrange=[variable,488,variable] field2>");
             place_["field1"] << panel2;
             // panel3
             panel3.create(panel2);
@@ -59,7 +62,7 @@ private:
             // panel31
             panel31.create(panel2);
             panel31_place_.bind(panel31);
-            panel31_place_.div("margin=[0,0,0,0] gap=2 _field_");
+            panel31_place_.div("margin=[2,2,2,2] gap=2 _field_");
             panel2_place_["field2"] << panel31;
             // picture1
             picture1.create(panel31);
@@ -74,7 +77,7 @@ private:
             // panel21
             panel21.create(*this);
             panel21_place_.bind(panel21);
-            panel21_place_.div("margin=[0,0,0,0] <vert margin=[0,0,0,0] gap=2 arrange=[30,variable,variable] field3>");
+            panel21_place_.div("margin=[0,0,0,0] <vert margin=[0,0,0,0] gap=2 arrange=[40,variable,variable] field3>");
             place_["field1"] << panel21;
             // label1
             label1.create(panel21);
@@ -112,9 +115,28 @@ private:
                 
             });
 
+            drawing_ = new nana::drawing(panel31);
+            drawing_->draw([&](nana::paint::graphics& graph)
+            {
+                unsigned int w = picture1.size().width + 4;
+                unsigned int h = picture1.size().height + 4;
+
+                graph.rectangle(nana::rectangle{0, 0, w, h}, true, nana::color(255, 254, 250));
+
+                graph.line(nana::point(1, 1), nana::point(w - 2, 1), nana::color(116, 116, 116));
+                graph.line(nana::point(1, 1), nana::point(1, h - 2), nana::color(116, 116, 116));
+
+                graph.line(nana::point(0, 0), nana::point(w, 0), nana::color(166, 166, 166));
+                graph.line(nana::point(0, 0), nana::point(0, h), nana::color(166, 166, 166));
+
+                graph.line(nana::point(w - 2, h - 2), nana::point(2, h - 2), nana::color(209, 208, 204));
+                graph.line(nana::point(w - 2, h - 2), nana::point(w - 2, 2), nana::color(209, 208, 204));
+            });
+
             initialized_ = true;
         }
 
+        drawing_->update();
         place_.collocate();
         panel2_place_.collocate();
         panel31_place_.collocate();
@@ -141,6 +163,8 @@ protected:
     nana::label label4;
     nana::panel<true> panel6;
     nana::button linkButton_;
+
+    nana::drawing* drawing_;
 
     // ===
 
