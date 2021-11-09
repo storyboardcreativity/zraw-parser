@@ -41,8 +41,8 @@ public:
             place_["_field1"] << _panel1;
             // InfoListBox
             InfoListBox.create(*this);
-            InfoListBox.append_header("Property");
-            InfoListBox.append_header("Info");
+            InfoListBox.append_header("Property", 120);
+            InfoListBox.append_header("Info", 550 - 120);
             place_["_field1"] << InfoListBox;
             // _panel2
             _panel2.create(*this);

@@ -100,8 +100,8 @@ public:
             place_["_field1"] << _panel2;
             // ConsoleBox
             ConsoleBox.create(_panel2);
-            ConsoleBox.append_header("Time (seconds)");
-            ConsoleBox.append_header("Message");
+            ConsoleBox.append_header("Time (seconds)", 120);
+            ConsoleBox.append_header("Message", 550 - 120);
             _panel2_place_["_field_"] << ConsoleBox;
             // _panel3
             _panel3.create(*this);
