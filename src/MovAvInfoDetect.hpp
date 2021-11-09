@@ -66,6 +66,9 @@ typedef struct TrackInfo
     enum TrackCodecType {Audio, Video, Unknown};
     TrackCodecType codec_type;
 
+    int width;
+    int height;
+
     int32_t universal_sample_size;
     std::vector<FrameInfo_t> frames;
 } TrackInfo_t;
@@ -777,6 +780,9 @@ int ff_mov_read_stsd_entries(MOVContext *c, int entries)
         int width = get_be16(pb); // width
         int height = get_be16(pb); // height
 
+        c->tracks_info.tracks[c->current_track_index].width = width;
+        c->tracks_info.tracks[c->current_track_index].height = height;
+
         // Next code is skipped because ZRAW codec does not use these fields
         //int hor_res = get_be32(pb); // horizontal resolution
         //int ver_res = get_be32(pb); // vertical resolution
@@ -914,9 +920,8 @@ static int mov_read_stsz(MOVContext *c, MOV_atom_t atom)
     return 0;
 }
 
-static const MOVParseTableEntry mov_default_parse_table[] = {
-    /* mp4 atoms */
-
+static const MOVParseTableEntry mov_default_parse_table[] =
+{
     {MKTAG('e', 'd', 't', 's'), mov_read_default},
     {MKTAG('f', 't', 'y', 'p'), mov_read_ftyp},
     {MKTAG('h', 'd', 'l', 'r'), mov_read_hdlr},
@@ -938,9 +943,10 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
     {MKTAG('w', 'i', 'd', 'e'), mov_read_wide}, /* place holder */
     {MKTAG('c', 'm', 'o', 'v'), mov_read_cmov},
 
-    {MKTAG('a', 'v', 'i', 'd'), mov_read_mdat}, //3dv
-    {MKTAG('3', 'd', 'v', 'f'), mov_read_moov}, //3dv
-    {0L, NULL}};
+    {MKTAG('a', 'v', 'i', 'd'), mov_read_mdat},
+    {MKTAG('3', 'd', 'v', 'f'), mov_read_moov},
+    {0L, NULL}
+};
 
 //--------------------------------------------------------
 

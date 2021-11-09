@@ -51,8 +51,6 @@ protected:
     void OnInputFileSelection(std::string path)
     {
         _model.InputFilePath_set(path);
-
-        //_ifip.UpdateInfo(path);
     }
 
     void OnOutputPathSelection(std::string path)
@@ -67,8 +65,10 @@ protected:
         _mfp.ChangeProcessButtonActivity(isValid);
 
         if (isValid)
+        {
             _mfp.ChangeProcessButtonText("Convert");
-            
+            _ifip.UpdateInfo(_model);
+        }
     }
 
     void OnProcessButtonClick()

@@ -56,7 +56,7 @@ public:
 
     void Clear() override
     {
-        InfoListBox.clear();
+        InfoListBox.erase();
     }
 
     ICategory& CreateCategory(std::string name) override

@@ -50,6 +50,26 @@ public:
         return _validityDescriprion;
     }
 
+    struct ValidInfo
+    {
+        std::string InputPath;
+        std::string OutputPath;
+
+        TracksInfo_t TracksInfo;
+    };
+    std::unique_ptr<ValidInfo> ValidInfo_get()
+    {
+        if (!IsValid())
+            return nullptr;
+
+        auto res = std::make_unique<ValidInfo>();
+        res->InputPath = InputFilePath_get();
+        res->OutputPath = OutputFolderPath_get();
+        res->TracksInfo = _tracksInfo;
+
+        return res;
+    }
+
 protected:
 
     void _updateValidityInfo()
@@ -94,6 +114,7 @@ protected:
 
         // Read input file
         auto info = MovDetectTracks(InputFilePath_get().c_str());
+        _tracksInfo = info;
 
         // Find ZRAW tracks
         int zrawTrackIndex = -1;
@@ -143,4 +164,6 @@ protected:
 
     bool _isValid;
     std::string _validityDescriprion;
+
+    TracksInfo_t _tracksInfo;
 };
