@@ -234,6 +234,8 @@ xcopy /e /k /h /i /y $(SolutionDir)..\res $(SolutionDir)..\build\res\</Command>
     <ClInclude Include="..\src\InputFileInfoPresenter.hpp" />
     <ClInclude Include="..\src\InputFileInfoUserControl.hpp" />
     <ClInclude Include="..\src\IProgressBar.hpp" />
+    <ClInclude Include="..\src\MainFormPresenter.hpp" />
+    <ClInclude Include="..\src\MainFormPresenterFactory.hpp" />
     <ClInclude Include="..\src\MainFormPanelPresenter.hpp" />
     <ClInclude Include="..\src\IMainFormPanelView.hpp" />
     <ClInclude Include="..\src\IUserControl.hpp" />

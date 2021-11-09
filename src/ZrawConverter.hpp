@@ -70,6 +70,8 @@ protected:
 
     void TaskThreadMethod(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput& console, IProgressBar& progressBar, std::string inputFilePath, std::string outputFilePath)
     {
+        console.printf("ZRAW Converter - Task Started!");
+
         progressBar.ChangePercent(0);
         progressBar.SetDescription("Starting conversion process...");
 
@@ -106,9 +108,10 @@ protected:
             progressBar.ChangePercent(0);
             break;
         }
-        
-        TRIGGER_EVENT(EventConversionFinished);
 
+        console.printf("ZRAW Converter - Task Finished!");
+
+        TRIGGER_EVENT(EventConversionFinished);
         _isStarted = false;
     }
 };

@@ -11,14 +11,14 @@ class MainFormPanelPresenter
 {
 public:
     MainFormPanelPresenter(
-        FileSelectionPresenter& fsp,
-        InputFileInfoPresenter& ifip,
+        std::unique_ptr<FileSelectionPresenter> fsp,
+        std::unique_ptr<InputFileInfoPresenter> ifip,
         IMainFormPanelView& mfp,
         IConsoleOutput& debug_visitor
-    ) : _fsp(fsp), _ifip(ifip), _mfp(mfp), _debug_visitor(debug_visitor), _converter(_model, debug_visitor, mfp.ProgressBar())
+    ) : _fsp(std::move(fsp)), _ifip(std::move(ifip)), _mfp(mfp), _debug_visitor(debug_visitor), _converter(_model, debug_visitor, mfp.ProgressBar())
     {
-        _fsp.EventInputFileSelection += MakeDelegate(this, &MainFormPanelPresenter::OnInputFileSelection);
-        _fsp.EventOutputPathSelection += MakeDelegate(this, &MainFormPanelPresenter::OnOutputPathSelection);
+        _fsp->EventInputFileSelection += MakeDelegate(this, &MainFormPanelPresenter::OnInputFileSelection);
+        _fsp->EventOutputPathSelection += MakeDelegate(this, &MainFormPanelPresenter::OnOutputPathSelection);
 
         _mfp.EventProcessButtonClick += MakeDelegate(this, &MainFormPanelPresenter::OnProcessButtonClick);
 
@@ -42,8 +42,8 @@ public:
 
         _mfp.EventProcessButtonClick -= MakeDelegate(this, &MainFormPanelPresenter::OnProcessButtonClick);
 
-        _fsp.EventOutputPathSelection -= MakeDelegate(this, &MainFormPanelPresenter::OnOutputPathSelection);
-        _fsp.EventInputFileSelection -= MakeDelegate(this, &MainFormPanelPresenter::OnInputFileSelection);
+        _fsp->EventOutputPathSelection -= MakeDelegate(this, &MainFormPanelPresenter::OnOutputPathSelection);
+        _fsp->EventInputFileSelection -= MakeDelegate(this, &MainFormPanelPresenter::OnInputFileSelection);
     }
 
 protected:
@@ -60,14 +60,14 @@ protected:
 
     void OnModelValidityUpdate(bool isValid, std::string descriprion)
     {
-        _fsp.SetStatusText(descriprion, isValid);
+        _fsp->SetStatusText(descriprion, isValid);
 
         _mfp.ChangeProcessButtonActivity(isValid);
 
         if (isValid)
         {
             _mfp.ChangeProcessButtonText("Convert");
-            _ifip.UpdateInfo(_model);
+            _ifip->UpdateInfo(_model);
         }
     }
 
@@ -81,8 +81,8 @@ protected:
 
         _mfp.ChangeProcessButtonText("Cancel");
 
-        _fsp.SetActivity(false);
-        _fsp.SetStatusText("Converting...", true);
+        _fsp->SetActivity(false);
+        _fsp->SetStatusText("Converting...", true);
 
         _converter.StartProcess();
     }
@@ -90,14 +90,14 @@ protected:
     void OnConversionProcessFinish()
     {
         _mfp.ChangeProcessButtonText("Convert");
-        _fsp.SetActivity(true);
+        _fsp->SetActivity(true);
 
         // Force model validity update
         OnModelValidityUpdate(_model.IsValid(), _model.ValidityDescriprion());
     }
 
-    FileSelectionPresenter& _fsp;
-    InputFileInfoPresenter& _ifip;
+    std::unique_ptr<FileSelectionPresenter> _fsp;
+    std::unique_ptr<InputFileInfoPresenter> _ifip;
     IMainFormPanelView& _mfp;
 
     IConsoleOutput& _debug_visitor;
