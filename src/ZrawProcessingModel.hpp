@@ -5,6 +5,10 @@
 
 #include <MovAvInfoDetect.hpp>
 
+#ifndef _MSC_VER
+#include <sys/stat.h>
+#endif
+
 class ZrawProcessingModel
 {
 public:

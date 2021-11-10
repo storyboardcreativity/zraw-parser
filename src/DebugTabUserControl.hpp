@@ -1,13 +1,15 @@
 #pragma once
 
+#include <cstdarg>
+#include <map>
+#include <thread>
+
 #include <nana/gui/widgets/panel.hpp>
 #include <nana/gui/place.hpp>
 #include <nana/gui/widgets/listbox.hpp>
 #include <nana/gui/widgets/label.hpp>
 
 #include <IConsoleView.hpp>
-#include <cstdarg>
-#include <map>
 
 class DebugTabUserControl : public nana::panel<true>, public IConsoleView
 {
@@ -132,7 +134,7 @@ public:
     IConsoleOutput& Console() override
     {
         if (!initialized_)
-            throw std::exception("Control is not initialized yet!");
+            throw std::runtime_error("Control is not initialized yet!");
         return _console_output_object;
     }
 
