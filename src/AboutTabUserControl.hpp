@@ -77,7 +77,7 @@ private:
             // panel21
             panel21.create(*this);
             panel21_place_.bind(panel21);
-            panel21_place_.div("margin=[0,0,0,0] <vert margin=[0,0,0,0] gap=2 arrange=[40,variable,variable] field3>");
+            panel21_place_.div("vert margin=[0,0,0,0] <vert margin=[0,0,0,0] gap=2 arrange=[40,variable] field3><margin=[30,150,30,150] btn_place>");
             place_["field1"] << panel21;
             // label1
             label1.create(panel21);
@@ -103,7 +103,7 @@ private:
             panel4_place_["field4"] << panel6;
             // label3
             linkButton_.create(panel21);
-            panel21_place_["field3"] << linkButton_;
+            panel21_place_["btn_place"] << linkButton_;
             linkButton_.caption("Click here to support ZRAW tools development");
             linkButton_.events().click([]()
             {
