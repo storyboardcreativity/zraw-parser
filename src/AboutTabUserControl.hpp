@@ -13,6 +13,7 @@
 
 #include "IUserControl.hpp"
 #include "Version.hpp"
+#include "AboutTabLogo.hpp"
 
 class AboutTabUserControl : public nana::panel<true>, public IUserControl
 {
@@ -67,7 +68,8 @@ private:
             // picture1
             picture1.create(panel31);
             panel31_place_["_field_"] << picture1;
-            picture1.load(nana::paint::image("res/about_logo.bmp"));
+            img_.open(about_logo_bmp_v.data(), about_logo_bmp_v.size());
+            picture1.load(img_);
             picture1.align(static_cast<nana::align>(0), static_cast<nana::align_v>(0));
             picture1.stretchable(true);
 
@@ -169,4 +171,5 @@ protected:
     // ===
 
     bool initialized_;
+    nana::paint::image img_;
 };
