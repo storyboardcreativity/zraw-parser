@@ -6,6 +6,17 @@ This is a free draft ZRAW decoder. This tool allows to extract ZRAW video files 
 
 For versions before 0.94 you can get pure Bayer CFA, for later versions - you get real HEVC bitstream extracted from ".ZRAW" file without any reencoding process.
 
+### Features
+
+| E2 firmware version | ZRAW contains | Feature |
+| :---: |:---:|:---:|
+|  0.93  | Compressed RAW CFA 12-bit | Convert ZRAW to DNG sequence |
+|  0.94  | HEVC 10-bit 4:2:0 | Extract HEVC-bitstream (`".avc"`) from ZRAW file |
+|  0.96  | HEVC 10-bit 4:2:0 | Extract HEVC-bitstream (`".avc"`) from ZRAW file |
+|  0.97  | HEVC 10-bit 4:2:0 | Extract HEVC-bitstream (`".avc"`) from ZRAW file |
+|  0.98  | HEVC 10-bit 4:2:0 | Extract HEVC-bitstream (`".avc"`) from ZRAW file |
+| 0.98.1 | HEVC 10-bit 4:2:0 | Extract HEVC-bitstream (`".avc"`) from ZRAW file |
+
 ### How to build?
 
 ##### For Windows
