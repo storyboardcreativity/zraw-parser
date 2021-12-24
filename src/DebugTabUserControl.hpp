@@ -3,6 +3,8 @@
 #include <cstdarg>
 #include <map>
 #include <thread>
+#include <fstream>
+#include <mutex>
 
 #include <nana/gui/widgets/panel.hpp>
 #include <nana/gui/place.hpp>
@@ -15,12 +17,15 @@ class DebugTabUserControl : public nana::panel<true>, public IConsoleView
 {
     class _console_output_class : public IConsoleOutput
     {
+        const std::string _log_file_path = "debug_log.log";
     public:
         _console_output_class(DebugTabUserControl& control)
             : _userControl(control), _start(std::chrono::system_clock::now()) {}
 
         void printf(const char* format, ...) override
         {
+            _mutex.lock();
+
             // 1. Calculate buffer length
             va_list args;
             va_start(args, format);
@@ -39,6 +44,7 @@ class DebugTabUserControl : public nana::panel<true>, public IConsoleView
             if (_threads.find(std::this_thread::get_id()) == _threads.end())
             {
                 auto thread_str = std::string("Thread #") + std::to_string(std::hash<std::thread::id>{}(std::this_thread::get_id()));
+
                 auto cat = _userControl.ConsoleBox.append(thread_str);
                 _threads[std::this_thread::get_id()] = cat;
             }
@@ -46,11 +52,16 @@ class DebugTabUserControl : public nana::panel<true>, public IConsoleView
             // 5. Calculate time offset
             const std::chrono::duration<double> elapsed_seconds = std::chrono::system_clock::now() - _start;
 
+            auto msg = std::string("Thread #") + std::to_string(std::hash<std::thread::id>{}(std::this_thread::get_id())) + " | " + std::to_string(elapsed_seconds.count()) + "s | " + std::string(buffer);
+            _appendLineToFile(_log_file_path, msg);
+
             // 6. Append string
             _threads[std::this_thread::get_id()].append({ std::to_string(elapsed_seconds.count()), std::string(buffer) });
 
             // 7. Remove buffer
             delete[] buffer;
+
+            _mutex.unlock();
         }
 
     private:
@@ -59,6 +70,26 @@ class DebugTabUserControl : public nana::panel<true>, public IConsoleView
         std::chrono::time_point<std::chrono::system_clock> _start;
 
         std::map<std::thread::id, nana::drawerbase::listbox::cat_proxy> _threads;
+
+        std::mutex _mutex;
+
+        // Following code is from: https://stackoverflow.com/a/39462191
+        void _appendLineToFile(std::string filepath, std::string line)
+        {
+            std::ofstream file;
+
+            // can't enable exception now because of gcc bug that raises ios_base::failure with useless message
+            // file.exceptions(file.exceptions() | std::ios::failbit);
+
+            file.open(filepath, std::ios::out | std::ios::app);
+            if (file.fail())
+                throw std::ios_base::failure(std::strerror(errno));
+
+            // make sure write fails with exception if something is wrong
+            file.exceptions(file.exceptions() | std::ios::failbit | std::ifstream::badbit);
+
+            file << line << std::endl;
+        }
     };
 
     _console_output_class _console_output_object;
