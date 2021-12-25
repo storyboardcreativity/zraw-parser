@@ -90,6 +90,12 @@ protected:
             progressBar.ChangePercent(0);
             break;
 
+        case ZrawNewExtractor::DirectoryCreationFailed:
+            console.printf("Failed to create output directory!\n");
+            progressBar.SetDescription("Failed to create output directory! Stopped.");
+            progressBar.ChangePercent(0);
+            break;
+
         case ZrawNewExtractor::Interrupted:
             console.printf("Interrupted! Stopped.\n");
             progressBar.SetDescription("Interrupted! Stopped.");
@@ -102,6 +108,7 @@ protected:
             progressBar.ChangePercent(0);
             break;
 
+        default:
         case ZrawNewExtractor::NotImplemented:
             console.printf("Feature is not implemented yet! Stopped.\n");
             progressBar.SetDescription("Feature is not implemented yet! Stopped.");

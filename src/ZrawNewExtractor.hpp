@@ -15,6 +15,11 @@
 #define LIB_ZRAW_STATIC
 #include <libzraw.h>
 
+// for windows mkdir
+#ifdef _WIN32
+#include <direct.h>
+#endif
+
 uint32_t decode_zraw_block_unk(uint8_t *frame_data, uint8_t *frame_data_out, uint32_t frame_data_size, uint32_t initial_xor)
 {
     uint32_t dst[34] = {0};
@@ -157,6 +162,7 @@ public:
         Done,
         InputFileOpenFailed,
         OutputFileOpenFailed,
+        DirectoryCreationFailed,
         Interrupted,
         NotImplemented
     };
@@ -164,7 +170,23 @@ public:
     ConversionResult ProcessConversion(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput &console, IProgressBar& progressBar, std::string zraw_file_path, std::string output_path)
     {
         console.printf("Converting file %s\n", zraw_file_path.c_str());
-        console.printf("Output folder: %s\n", output_path.c_str());
+
+        std::string fileName = remove_extension(base_name(zraw_file_path));
+        auto dirPath = output_path + "/" + fileName;
+        console.printf("Output folder: %s\n", dirPath.c_str());
+
+#ifdef _WIN32
+        if(_mkdir(dirPath.c_str()) != 0)
+        {
+            if (errno != EEXIST)
+            {
+                console.printf("Could not create folder: %s\n", dirPath.c_str());
+                return DirectoryCreationFailed;
+            }
+        }
+#else
+#error !!! mkdir for Linux is not implemented yet!
+#endif
 
         // Get tracks info from input file
         console.printf("Detecting tracks...\n");
@@ -214,10 +236,10 @@ public:
             switch (track.zraw_raw_version)
             {
             case 0x12EA78D2:
-                subRes = process_zraw_old_raw(itsTimeToStopOkay, console, progressBar, f_in, track, i, output_path);
+                subRes = process_zraw_old_raw(itsTimeToStopOkay, console, progressBar, f_in, track, i, dirPath);
                 break;
             case 0x45A32DEF:
-                subRes = process_zraw_new_raw(itsTimeToStopOkay, console, progressBar, f_in, track, i, output_path, tracks_info.creation_time);
+                subRes = process_zraw_new_raw(itsTimeToStopOkay, console, progressBar, f_in, track, i, dirPath, tracks_info.creation_time);
                 break;
             default:
                 console.printf("Can't decode unknown ZRAW version!\n");
@@ -256,21 +278,91 @@ protected:
         return frame;
     }
 
+    bool process_zraw_decoder_state(IConsoleOutput &console, zraw_decoder_state_t state)
+    {
+        switch (state)
+        {
+        case ZRAW_DECODER_STATE__INVALID_INSTANCE:
+            console.printf("ZRAW decoder: Could not create ZRAW decoding context!\n");
+            return false;
+
+        case ZRAW_DECODER_STATE__STANDBY:
+            console.printf("ZRAW decoder: STANDBY\n");
+            return true;
+
+        case ZRAW_DECODER_STATE__NO_SPACE_TO_WRITE_CFA:
+            console.printf("ZRAW decoder: NO_SPACE_TO_WRITE_CFA\n");
+            return false;
+
+        case ZRAW_DECODER_STATE__FRAME_IS_READ:
+            console.printf("ZRAW decoder: FRAME_IS_READ\n");
+            return true;
+
+        case ZRAW_DECODER_STATE__FRAME_READING_FAILED:
+            console.printf("ZRAW decoder: FRAME_READING_FAILED\n");
+            return false;
+
+        case ZRAW_DECODER_STATE__FRAME_IS_DECOMPRESSED:
+            console.printf("ZRAW decoder: FRAME_IS_DECOMPRESSED\n");
+            return true;
+
+        case ZRAW_DECODER_STATE__FRAME_DECOMPRESSION_FAILED:
+            console.printf("ZRAW decoder: FRAME_DECOMPRESSION_FAILED\n");
+            return false;
+
+        case ZRAW_DECODER_STATE__INSTANCE_IS_REMOVED:
+            console.printf("ZRAW decoder: INSTANCE_IS_REMOVED\n");
+            return true;
+
+        case ZRAW_DECODER_STATE__EXCEPTION:
+            console.printf("ZRAW decoder: EXCEPTION -> %s\n", zraw_decoder__exception_message());
+            break;
+
+        case ZRAW_DECODER_STATE__UNEXPECTED_FAILURE:
+        default:
+            console.printf("ZRAW decoder: UNEXPECTED_FAILURE\n");
+            return false;
+        }
+
+        console.printf("ZRAW decoder: WARNING! Missing switch-case!\n");
+        return false;
+    }
+
     void process_dng(IConsoleOutput &console, IProgressBar& progressBar, std::vector<uint8_t>& buffer, std::string outputRawFilePath)
     {
         // Create ZRAW decoder
         auto decoder = zraw_decoder__create();
+        if (decoder == nullptr)
+        {
+            console.printf("Error! Could not create ZRAW decoding context!\n");
+            return;
+        }
 
         // Read frame from buffer
         progressBar.SetDescription("Fetching ZRAW frame info - %s", outputRawFilePath.c_str());
         auto reading_state = zraw_decoder__read_hisi_frame(decoder, buffer.data(), buffer.size());
+        if (!process_zraw_decoder_state(console, reading_state))
+        {
+            console.printf("Frame reading failed!\n");
+            return;
+        }
 
         zraw_frame_info_t frame_info;
         auto info_state = zraw_decoder__get_hisi_frame_info(decoder, frame_info);
+        if (!process_zraw_decoder_state(console, info_state))
+        {
+            console.printf("Getting HiSilicon frame info failed!\n");
+            return;
+        }
 
         // Decode frame
         progressBar.SetDescription("Decompressing ZRAW CFA - %s", outputRawFilePath.c_str());
         auto decompression_state = zraw_decoder__decompress_hisi_frame(decoder);
+        if (!process_zraw_decoder_state(console, decompression_state))
+        {
+            console.printf("Frame decompression failed!\n");
+            return;
+        }
 
         tinydngwriter::DNGImage dng_image;
         dng_image.SetBigEndian(false);
@@ -350,9 +442,19 @@ protected:
         progressBar.SetDescription("Saving DNG file - %s", outputRawFilePath.c_str());
         std::vector<uint16_t> image_data(frame_info.width_in_photodiodes * frame_info.height_in_photodiodes);
         auto cfa_state = zraw_decoder__get_decompressed_CFA(decoder, image_data.data(), image_data.size() * sizeof(uint16_t));
+        if (!process_zraw_decoder_state(console, cfa_state))
+        {
+            console.printf("Receiving CFA failed!\n");
+            return;
+        }
 
         // Release ZRAW decoder
-        zraw_decoder__free(decoder);
+        auto free_state = zraw_decoder__free(decoder);
+        if (!process_zraw_decoder_state(console, free_state))
+        {
+            console.printf("Failed to remove ZRAW decoding context!\n");
+            return;
+        }
 
         dng_image.SetImageDataPacked(image_data.data(), image_data.size(), frame_info.bits_per_photodiode_value, true);
 
@@ -464,5 +566,17 @@ protected:
         f_out.close();
 
         return Done;
+    }
+
+    template<class T>
+    T remove_extension(T const & filename)
+    {
+        typename T::size_type const p(filename.find_last_of('.'));
+        return p > 0 && p != T::npos ? filename.substr(0, p) : filename;
+    }
+
+    std::string base_name(std::string const & path)
+    {
+        return path.substr(path.find_last_of("/\\") + 1);
     }
 };
