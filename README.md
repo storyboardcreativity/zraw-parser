@@ -1,4 +1,4 @@
-# zraw-parser
+# zraw-parser <a href="https://ko-fi.com/storyboardcreativity" target="_blank"><img align="right" src="https://cdn.ko-fi.com/cdn/kofi3.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
 
 This is a free draft ZRAW decoder. This tool allows to extract ZRAW video files to DNG sequences or HEVC bitstreams (according to camera firmware version).
 
@@ -12,6 +12,7 @@ For versions before 0.94 you can get pure Bayer CFA, for later versions - you ge
 | :---: |:---:|:---:|
 |  0.93  | Compressed RAW CFA 12-bit | Convert ZRAW to DNG sequence |
 |  0.94  | HEVC 10-bit 4:2:0 | Extract HEVC-bitstream (`".avc"`) from ZRAW file |
+|  0.95  | HEVC 10-bit 4:2:0 | Extract HEVC-bitstream (`".avc"`) from ZRAW file |
 |  0.96  | HEVC 10-bit 4:2:0 | Extract HEVC-bitstream (`".avc"`) from ZRAW file |
 |  0.97  | HEVC 10-bit 4:2:0 | Extract HEVC-bitstream (`".avc"`) from ZRAW file |
 |  0.98  | HEVC 10-bit 4:2:0 | Extract HEVC-bitstream (`".avc"`) from ZRAW file |
