@@ -1,8 +1,14 @@
-# zraw-parser <a href="https://ko-fi.com/storyboardcreativity" target="_blank"><img align="right" src="https://cdn.ko-fi.com/cdn/kofi3.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
+# Z CAM E2 ZRAW parser <a href="https://ko-fi.com/storyboardcreativity" target="_blank"><img align="right" src="https://cdn.ko-fi.com/cdn/kofi3.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
 
 This is a free draft ZRAW decoder. This tool allows to extract ZRAW video files to DNG sequences or HEVC bitstreams (according to camera firmware version).
 
-### What ZRAW versions are compatible with this software?
+## Community
+
+<a href="https://t.me/zcam_rus" target="_blank"><img src="docs/soc_net_icons/telegram.png" alt="Buy Me A Coffee" style="height: 40px !important;width: 40px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
+<a href="https://www.facebook.com/groups/storyboardcreativity" target="_blank"><img src="docs/soc_net_icons/facebook.png" alt="Buy Me A Coffee" style="height: 40px !important;width: 40px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
+<a href="https://vk.com/storyboardcreativity" target="_blank"><img src="docs/soc_net_icons/vk.png" alt="Buy Me A Coffee" style="height: 40px !important;width: 40px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
+
+## What ZRAW versions are compatible with this software?
 
 For versions before 0.94 you can get pure Bayer CFA, for later versions - you get real HEVC bitstream extracted from ".ZRAW" file without any reencoding process.
 
@@ -18,7 +24,7 @@ For versions before 0.94 you can get pure Bayer CFA, for later versions - you ge
 |  0.98  | HEVC 10-bit 4:2:0 | Extract HEVC-bitstream (`".avc"`) from ZRAW file |
 | 0.98.1 | HEVC 10-bit 4:2:0 | Extract HEVC-bitstream (`".avc"`) from ZRAW file |
 
-### How to build?
+## How to build?
 
 ##### For Windows
 - Get dependencies for project (OpenSSL, for example)
@@ -28,7 +34,7 @@ For versions before 0.94 you can get pure Bayer CFA, for later versions - you ge
 - Get dependencies for project (OpenSSL, for example)
 - Type `make` and have fun!
 
-### License
+## License
 
 Copyright 2021 storyboardcreativity
 
