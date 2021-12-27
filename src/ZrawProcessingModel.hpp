@@ -13,6 +13,7 @@ class ZrawProcessingModel
 {
 public:
     DECLARE_EVENT(void, bool, std::string) EventValidityUpdate;
+    DECLARE_EVENT(void, std::string) EventMovContainerLogUpdate;
 
 public:
     ZrawProcessingModel() : _isValid(false)
@@ -61,6 +62,7 @@ public:
 
         TracksInfo_t TracksInfo;
     };
+
     std::unique_ptr<ValidInfo> ValidInfo_get()
     {
         if (!IsValid())
@@ -101,7 +103,7 @@ protected:
         }
 
         // Check input path
-        if (_pathExists(InputFilePath_get()) != 2)
+        if (!_fileExists(InputFilePath_get()))
         {
             _isValid = false;
             _validityDescriprion = "Could not open input file.";
@@ -109,7 +111,7 @@ protected:
         }
 
         // Check output path
-        if (_pathExists(OutputFolderPath_get()) != 1)
+        if (!_folderExists(OutputFolderPath_get()))
         {
             _isValid = false;
             _validityDescriprion = "Output path is invalid.";
@@ -119,6 +121,8 @@ protected:
         // Read input file
         auto info = MovDetectTracks(InputFilePath_get().c_str());
         _tracksInfo = info;
+
+        TRIGGER_EVENT(EventMovContainerLogUpdate, info.output_log);
 
         // Find ZRAW tracks
         int zrawTrackIndex = -1;
@@ -150,17 +154,27 @@ protected:
         _validityDescriprion = "Ready to process conversion!";
     }
 
-    int _pathExists(const std::string& path)
+    bool _fileExists(const std::string& path)
+    {
+        struct stat info;
+
+        std::fstream f_in(path, std::ios::in | std::ios::binary);
+        if (!f_in.is_open())
+            return false;
+
+        f_in.close();
+        return true;
+    }
+
+    bool _folderExists(const std::string& path)
     {
         struct stat info;
 
         if (stat(path.c_str(), &info) != 0)
-            return -1;    // Can't get access
-
+            return false;
         if (info.st_mode & S_IFDIR)
-            return 1;    // Path points to a directory
-
-        return 2;    // Path points to a file
+            return true;
+        return false;
     }
 
     std::string _inputFilePath;

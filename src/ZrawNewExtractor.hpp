@@ -193,6 +193,8 @@ public:
         progressBar.SetDescription("Detecting tracks...");
         auto tracks_info = MovDetectTracks(zraw_file_path.c_str());
 
+        console.printf(tracks_info.output_log.c_str());
+
         if (itsTimeToStopOkay)
             return Interrupted;
 
@@ -265,8 +267,8 @@ protected:
     std::vector<uint8_t> zrawFrame(std::istream &f_in, TrackInfo_t &track, uint32_t frame_index)
     {
         // Extract saved offset and size
-        uint32_t offset = track.frames[frame_index].frame_offset;
-        uint32_t size = track.frames[frame_index].frame_size;
+        const auto offset = track.frames[frame_index].frame_offset;
+        const auto size = track.frames[frame_index].frame_size;
 
         // Seek read position to zraw frame offset
         f_in.seekg(offset, f_in.beg);

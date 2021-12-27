@@ -23,6 +23,11 @@ https://github.com/FFmpeg/FFmpeg/blob/master/libavformat/mov.c
 #include <inttypes.h>
 #include <sstream>
 
+#ifdef _WIN32
+#define fseek _fseeki64
+#define ftell _ftelli64
+#endif
+
 enum AVMediaType
 {
     AVMEDIA_TYPE_UNKNOWN = -1,
@@ -43,14 +48,14 @@ enum AVMediaType
 typedef struct
 {
     uint32_t type;
-    int32_t offset;
-    int32_t size; /* total size (excluding the size and type fields) */
+    int64_t offset;
+    int64_t size; /* total size (excluding the size and type fields) */
 } MOV_atom_t;
 
 typedef struct FrameInfo
 {
-    uint32_t frame_offset; /* frame offsets in file */
-    uint32_t frame_size;   /* frame size in file */
+    uint64_t frame_offset; /* frame offsets in file */
+    uint64_t frame_size;   /* frame size in file */
 } FrameInfo_t;
 
 typedef struct TrackInfo
@@ -77,6 +82,8 @@ typedef struct TracksInfo
 {
     std::vector<TrackInfo_t> tracks;
     uint32_t creation_time;
+
+    std::string output_log;
 } TracksInfo_t;
 
 typedef struct MOVContext
@@ -202,20 +209,12 @@ static uint32_t get_be32(FILE *s)
     return val;
 }
 
-static int32_t get_be64(FILE *s)
+static uint64_t get_be64(FILE *s)
 {
-    int32_t val;
-    val = get_be32(s);
-    if (val == 0)
-    {
-        val = (int32_t)get_be32(s);
-    }
-    else
-    {
-        get_be32(s);
-        val = INT_MAX;
-    }
-    return val;
+    uint32_t val;
+    const auto a = get_be32(s);
+    const auto b = get_be32(s);
+    return ((uint64_t)a << 32) | b;
 }
 
 static void FSKIP(FILE *fp, int64_t size)
@@ -233,12 +232,16 @@ static int64_t FTELL(FILE *fp)
     return ftell(fp);
 }
 
-int32_t fsize(FILE *s)
+int64_t fsize(FILE *s)
 {
-    int32_t size;
-    fseek(s, 0, SEEK_END);
-    size = ftell(s);
-    fseek(s, 0, SEEK_SET);
+    if (fseek(s, 0, SEEK_END) != 0)
+        return -1;
+
+    const auto size = ftell(s);
+
+    if (fseek(s, 0, SEEK_SET) != 0)
+        return -1;
+
     return size;
 }
 
@@ -287,7 +290,11 @@ static int32_t mov_read_default(MOVContext *c, MOV_atom_t atom)
         for (i = 0; c->parse_table[i].type != 0L && c->parse_table[i].type != a.type; ++i)
             /* empty */;
 
-        ALOGV << "type:" << a.type << " size:" << std::hex << a.size << std::dec << std::endl;
+        char atom_name[5];
+        memset(atom_name, 0x00, sizeof(atom_name));
+        *(uint32_t*)atom_name = a.type;
+
+        ALOGV << "type: " << a.type << " (" << atom_name << ")" << " | size: " << std::hex << a.size << std::dec << std::endl;
 
         if (c->parse_table[i].type == 0)
         { /* skip leaf atoms data */
@@ -557,8 +564,6 @@ static int mov_read_stco(MOVContext *c, MOV_atom_t atom)
     //get_byte(pb); /* version */
     //get_be24(pb); /* flags */
 
-    //if (c->tracks[c->current_track_index].)
-
     // For ZRAW version and flags fields are used to store XOR base for values
     if (c->tracks_info.tracks[c->current_track_index].zraw_raw_version != 0x45A32DEF)
         xor_base = 0x0;
@@ -574,7 +579,7 @@ static int mov_read_stco(MOVContext *c, MOV_atom_t atom)
         for (uint32_t i = 0; i < entries && !feof(pb); i++)
         {
             if (c->tracks_info.tracks[c->current_track_index].frames.size() < i + 1)
-                c->tracks_info.tracks[c->current_track_index].frames.push_back(FrameInfo_t());
+                c->tracks_info.tracks[c->current_track_index].frames.emplace_back();
             c->tracks_info.tracks[c->current_track_index].frames[i].frame_offset = get_be32(pb) ^ xor_base;
         }
     }
@@ -582,8 +587,8 @@ static int mov_read_stco(MOVContext *c, MOV_atom_t atom)
         for (uint32_t i = 0; i < entries && !feof(pb); i++)
         {
             if (c->tracks_info.tracks[c->current_track_index].frames.size() < i + 1)
-                c->tracks_info.tracks[c->current_track_index].frames.push_back(FrameInfo_t());
-            c->tracks_info.tracks[c->current_track_index].frames[i].frame_offset = get_be64(pb);
+                c->tracks_info.tracks[c->current_track_index].frames.emplace_back();
+            c->tracks_info.tracks[c->current_track_index].frames[i].frame_offset = get_be64(pb) ^ (0xFFFFFFFF00000000 | xor_base);
         }
     else
         return -1;
@@ -855,6 +860,11 @@ static int mov_read_stsd(MOVContext *c, MOV_atom_t atom)
     return ff_mov_read_stsd_entries(c, entries);
 }
 
+static int mov_read_free(MOVContext *c, MOV_atom_t atom)
+{
+    return 0;
+}
+
 static int mov_read_stsz(MOVContext *c, MOV_atom_t atom)
 {
     unsigned int i, entries, sample_size, field_size, num_bytes;
@@ -901,11 +911,11 @@ static int mov_read_stsz(MOVContext *c, MOV_atom_t atom)
         }
 
         // Read sample size
-        uint32_t sample_size_local = get_be32(pb);
+        const uint64_t sample_size_local = get_be32(pb);
 
         // Add frame if not exists yet
         if (c->tracks_info.tracks[c->current_track_index].frames.size() < i + 1)
-            c->tracks_info.tracks[c->current_track_index].frames.push_back(FrameInfo_t());
+            c->tracks_info.tracks[c->current_track_index].frames.emplace_back();
 
         // Save frame (sample) size
         c->tracks_info.tracks[c->current_track_index].frames[i].frame_size = sample_size_local;
@@ -933,7 +943,10 @@ static const MOVParseTableEntry mov_default_parse_table[] =
     {MKTAG('m', 'v', 'h', 'd'), mov_read_mvhd},
 
     {MKTAG('s', 't', 'b', 'l'), mov_read_default},
+
     {MKTAG('s', 't', 'c', 'o'), mov_read_stco}, /* sample offsets */
+    {MKTAG('c', 'o', '6', '4'), mov_read_stco}, /* sample offsets (64-bit) */
+
     {MKTAG('s', 't', 's', 'd'), mov_read_stsd}, /* sample info */
     {MKTAG('s', 't', 's', 'z'), mov_read_stsz}, /* sample sizes */
 
@@ -945,6 +958,8 @@ static const MOVParseTableEntry mov_default_parse_table[] =
 
     {MKTAG('a', 'v', 'i', 'd'), mov_read_mdat},
     {MKTAG('3', 'd', 'v', 'f'), mov_read_moov},
+
+    {MKTAG('f', 'r', 'e', 'e'), mov_read_free},
     {0L, NULL}
 };
 
@@ -1009,10 +1024,14 @@ TracksInfo_t MovDetectTracks(const char *url)
         return c->tracks_info;
 
     if (mov_read_header(c, 0) != 0)
+    {
+        fclose(c->fp);
+        c->tracks_info.output_log = c->string_stream.str();
         return c->tracks_info;
+    }
 
     fclose(c->fp);
-
+    c->tracks_info.output_log = c->string_stream.str();
     return c->tracks_info;
 }
 
@@ -1072,8 +1091,8 @@ public:
     std::vector<uint8_t> zrawFrame(uint32_t stream_index, uint32_t frame_index)
     {
         // Extract saved offset and size
-        uint32_t offset = _zraw_tracks[stream_index].frames[frame_index].frame_offset;
-        uint32_t size = _zraw_tracks[stream_index].frames[frame_index].frame_size;
+        const auto offset = _zraw_tracks[stream_index].frames[frame_index].frame_offset;
+        const auto size = _zraw_tracks[stream_index].frames[frame_index].frame_size;
 
         // Open file
         std::fstream file_in(_filepath, std::fstream::in | std::fstream::binary);

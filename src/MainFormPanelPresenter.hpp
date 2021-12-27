@@ -23,6 +23,7 @@ public:
         _mfp.EventProcessButtonClick += MakeDelegate(this, &MainFormPanelPresenter::OnProcessButtonClick);
 
         _model.EventValidityUpdate += MakeDelegate(this, &MainFormPanelPresenter::OnModelValidityUpdate);
+        _model.EventMovContainerLogUpdate += MakeDelegate(this, &MainFormPanelPresenter::OnMovContainerLogUpdate);
 
         _converter.EventConversionFinished += MakeDelegate(this, &MainFormPanelPresenter::OnConversionProcessFinish);
 
@@ -38,6 +39,7 @@ public:
     {
         _converter.EventConversionFinished -= MakeDelegate(this, &MainFormPanelPresenter::OnConversionProcessFinish);
 
+        _model.EventMovContainerLogUpdate -= MakeDelegate(this, &MainFormPanelPresenter::OnMovContainerLogUpdate);
         _model.EventValidityUpdate -= MakeDelegate(this, &MainFormPanelPresenter::OnModelValidityUpdate);
 
         _mfp.EventProcessButtonClick -= MakeDelegate(this, &MainFormPanelPresenter::OnProcessButtonClick);
@@ -69,6 +71,11 @@ protected:
             _mfp.ChangeProcessButtonText("Convert");
             _ifip->UpdateInfo(_model);
         }
+    }
+
+    void OnMovContainerLogUpdate(std::string log)
+    {
+        _debug_visitor.printf(log.c_str());
     }
 
     void OnProcessButtonClick()
