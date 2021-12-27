@@ -91,13 +91,19 @@ public:
                 auto& zrawFrameSizesCat = _view.CreateCategory("ZRAW (Track #" + std::to_string(i) + ") sample sizes");
                 auto& zrawFrameOffsetsCat = _view.CreateCategory("ZRAW (Track #" + std::to_string(i) + ") sample offsets");
 
+                zrawFrameSizesCat.Lock();
+                zrawFrameOffsetsCat.Lock();
+
                 for (int p = 0; p < info->TracksInfo.tracks[i].frames.size(); ++p)
                 {
                     auto& frame = info->TracksInfo.tracks[i].frames[p];
 
-                    zrawFrameSizesCat.SetProperty("Sample #" + std::to_string(p), "%d (0x%X)", frame.frame_size, frame.frame_size);
-                    zrawFrameOffsetsCat.SetProperty("Sample #" + std::to_string(p), "%d (0x%X)", frame.frame_offset, frame.frame_offset);
+                    zrawFrameSizesCat.SetProperty("Sample #" + std::to_string(p), "%lld (0x%llX)", frame.frame_size, frame.frame_size);
+                    zrawFrameOffsetsCat.SetProperty("Sample #" + std::to_string(p), "%lld (0x%llX)", frame.frame_offset, frame.frame_offset);
                 }
+
+                zrawFrameSizesCat.Unlock();
+                zrawFrameOffsetsCat.Unlock();
             }
         }
     }

@@ -61,7 +61,7 @@ public:
 
     ICategory& CreateCategory(std::string name) override
     {
-        _categories.push_back(std::make_unique<Category>(Category(InfoListBox.append(name))));
+        _categories.push_back(std::make_unique<Category>(Category(InfoListBox, InfoListBox.append(name))));
         return *_categories[_categories.size() - 1];
     }
 
@@ -76,7 +76,7 @@ protected:
     class Category : public ICategory
     {
     public:
-        Category(nana::drawerbase::listbox::cat_proxy category) : _category(category) {}
+        Category(nana::listbox& listBox, nana::drawerbase::listbox::cat_proxy category) : _listBox(listBox), _category(category) {}
 
         void SetProperty(std::string name, std::string format, ...) override
         {
@@ -101,7 +101,17 @@ protected:
             delete[] buffer;
         }
 
+        void Lock() override
+        {
+            _listBox.auto_draw(false);
+        }
+
+        void Unlock() override
+        {
+            _listBox.auto_draw(true);
+        }
     private:
+        nana::listbox& _listBox;
         nana::drawerbase::listbox::cat_proxy _category;
     };
 
