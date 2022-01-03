@@ -109,7 +109,7 @@ xcopy /e /k /h /i /y $(SolutionDir)..\res $(SolutionDir)..\build\res\</Command>
     </PostBuildEvent>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)..\nana\build\bin;$(SolutionDir)..\zraw-decoder\zraw-decoder-lib\build;$(OPENSSL_INSTALL_DIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>nana_$(PlatformToolset)_$(Configuration)_$(PlatformTarget).lib;libzraw.lib;libcrypto.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>nana_$(PlatformToolset)_$(Configuration)_$(PlatformTarget).lib;libzraw.lib;libcrypto_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
     </Link>
   </ItemDefinitionGroup>
@@ -141,7 +141,7 @@ xcopy /e /k /h /i /y $(SolutionDir)..\res $(SolutionDir)..\build\res\</Command>
     </PostBuildEvent>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)..\nana\build\bin;$(SolutionDir)..\zraw-decoder\zraw-decoder-lib\build;$(OPENSSL_INSTALL_DIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>nana_$(PlatformToolset)_$(Configuration)_$(PlatformTarget).lib;libzraw.lib;libcrypto.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>nana_$(PlatformToolset)_$(Configuration)_$(PlatformTarget).lib;libzraw.lib;libcrypto_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
     </Link>
   </ItemDefinitionGroup>
@@ -162,7 +162,7 @@ xcopy /e /k /h /i /y $(SolutionDir)..\res $(SolutionDir)..\build\res\</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)..\nana\build\bin;$(SolutionDir)..\zraw-decoder\zraw-decoder-lib\build;$(OPENSSL_INSTALL_DIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>nana_$(PlatformToolset)_$(Configuration)_$(PlatformTarget).lib;libzraw.lib;libcrypto.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>nana_$(PlatformToolset)_$(Configuration)_$(PlatformTarget).lib;libzraw.lib;libcrypto_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
     </Link>
     <PreBuildEvent>
@@ -198,7 +198,7 @@ xcopy /e /k /h /i /y $(SolutionDir)..\res $(SolutionDir)..\build\res\</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)..\nana\build\bin;$(SolutionDir)..\zraw-decoder\zraw-decoder-lib\build;$(OPENSSL_INSTALL_DIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>nana_$(PlatformToolset)_$(Configuration)_$(PlatformTarget).lib;libzraw.lib;libcrypto.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>nana_$(PlatformToolset)_$(Configuration)_$(PlatformTarget).lib;libzraw.lib;libcrypto_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
     </Link>
     <PreBuildEvent>
