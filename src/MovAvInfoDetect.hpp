@@ -588,7 +588,11 @@ static int mov_read_stco(MOVContext *c, MOV_atom_t atom)
         {
             if (c->tracks_info.tracks[c->current_track_index].frames.size() < i + 1)
                 c->tracks_info.tracks[c->current_track_index].frames.emplace_back();
-            c->tracks_info.tracks[c->current_track_index].frames[i].frame_offset = get_be64(pb) ^ (0xFFFFFFFF00000000 | xor_base);
+
+            if (xor_base == 0)
+                c->tracks_info.tracks[c->current_track_index].frames[i].frame_offset = get_be64(pb);
+            else
+                c->tracks_info.tracks[c->current_track_index].frames[i].frame_offset = get_be64(pb) ^ (0xFFFFFFFF00000000 | xor_base);
         }
     else
         return -1;

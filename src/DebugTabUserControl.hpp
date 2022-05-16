@@ -24,7 +24,7 @@ class DebugTabUserControl : public nana::panel<true>, public IConsoleView
 
         void printf(const char* format, ...) override
         {
-            _mutex.lock();
+            //_mutex.lock();
 
             // 1. Calculate buffer length
             va_list args;
@@ -61,7 +61,7 @@ class DebugTabUserControl : public nana::panel<true>, public IConsoleView
             // 7. Remove buffer
             delete[] buffer;
 
-            _mutex.unlock();
+            //_mutex.unlock();
         }
 
     private:

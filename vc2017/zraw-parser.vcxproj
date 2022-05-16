@@ -246,6 +246,7 @@ xcopy /e /k /h /i /y $(SolutionDir)..\res $(SolutionDir)..\build\res\</Command>
     <ClInclude Include="..\src\MovAvInfoDetect.hpp" />
     <ClInclude Include="..\src\Version.hpp" />
     <ClInclude Include="..\src\ZrawConverter.hpp" />
+    <ClInclude Include="..\src\ZrawConverterThread.hpp" />
     <ClInclude Include="..\src\ZrawNewExtractor.hpp" />
     <ClInclude Include="..\src\ZrawProcessingModel.hpp" />
   </ItemGroup>
