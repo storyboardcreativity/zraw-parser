@@ -35,8 +35,11 @@ public:
 
         // Paths category
         auto& cat0 = _view.CreateCategory("Paths");
-        cat0.SetProperty("Input file", info->InputPath);
         cat0.SetProperty("Output folder", info->OutputPath);
+
+        /*
+
+        cat0.SetProperty("Input file", info->InputPath);
 
         // Tracks category
         auto& cat = _view.CreateCategory("Tracks");
@@ -106,6 +109,8 @@ public:
                 zrawFrameOffsetsCat.Unlock();
             }
         }
+
+        */
     }
 
 protected:

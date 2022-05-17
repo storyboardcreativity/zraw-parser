@@ -10,7 +10,6 @@
 
 #include <IFileSelectionView.hpp>
 
-
 class FileSelectionUserControl : public nana::panel<true>, public IFileSelectionView
 {
 public:
@@ -39,14 +38,14 @@ public:
         if (!initialized_)
         {
             place_.bind(*this);
-            place_.div("margin=[5,5,5,5] <vert margin=[5,5,5,5] gap=2 arrange=[20,160,variable] field1>");
+            place_.div("margin=[5,5,5,5] <vert margin=[5,5,5,5] gap=2 arrange=[20,130,variable] field1>");
             // panel1
             panel1.create(*this);
             place_["field1"] << panel1;
             // panel2
             panel2.create(*this);
             panel2_place_.bind(panel2);
-            panel2_place_.div("weight=160 margin=[5,5,5,5] <margin=[5,5,5,5] gap=2 arrange=[40,variable,40] field2>");
+            panel2_place_.div("weight=130 margin=[5,5,5,5] <margin=[5,5,5,5] gap=2 arrange=[40,variable,40] field2>");
             place_["field1"] << panel2;
             // panel3
             panel3.create(panel2);
@@ -62,50 +61,6 @@ public:
             panel32_place_.div("<vert gap=2 arrange=[variable,variable,25] field3>");
             panel32.transparent(true);
             group1["_field_"] << panel32;
-            // panel4
-            panel4.create(panel32);
-            panel4_place_.bind(panel4);
-            panel4_place_.div("margin=[5,5,5,5] <margin=[5,5,5,5] gap=2 arrange=[100,variable,100] field4>");
-            panel4.transparent(true);
-            panel32_place_["field3"] << panel4;
-            // label1
-            label1.create(panel4);
-            panel4_place_["field4"] << label1;
-            label1.caption("ZRAW file:");
-            label1.transparent(true);
-            label1.text_align(static_cast<nana::align>(1), static_cast<nana::align_v>(1));
-            // InputFileTextBox
-            InputFileTextBox.create(panel4);
-            panel4_place_["field4"] << InputFileTextBox;
-            InputFileTextBox.multi_lines(false);
-            InputFileTextBox.events().key_release([&](const nana::arg_keyboard& arg)
-            {
-                if (arg.key == nana::keyboard::enter)
-                    TRIGGER_EVENT(EventInputFileSelection, InputFileTextBox.text());
-            });
-            InputFileTextBox.events().focus([&](const nana::arg_focus& arg)
-            {
-                if (arg.getting == false)
-                    TRIGGER_EVENT(EventInputFileSelection, InputFileTextBox.text());
-            });
-            // OpenFileButton
-            OpenFileButton.create(panel4);
-            panel4_place_["field4"] << OpenFileButton;
-            OpenFileButton.caption("Open");
-            OpenFileButton.events().click([&]()
-            {
-                nana::filebox fb(*this, true);
-                fb.title("Open ZRAW Video File");
-                fb.add_filter("ZRAW Video File (*.ZRAW)", "*.ZRAW");
-                fb.add_filter("All Files", "*.*");
-                fb.allow_multi_select(false);
-
-                auto files = fb();
-                if (files.size() == 1)
-                {
-                    TRIGGER_EVENT(EventInputFileSelection, files[0].string());
-                }
-            });
 
             // panel5
             panel5.create(panel32);
@@ -180,14 +135,7 @@ public:
         panel2_place_.collocate();
         group1.collocate();
         panel32_place_.collocate();
-        panel4_place_.collocate();
         panel5_place_.collocate();
-    }
-
-    void SetSelectedInputFileFieldText(std::string path) override
-    {
-        if (InputFileTextBox.text() != path)
-            InputFileTextBox.reset(path);
     }
 
     void SetSelectedOutputPathFieldText(std::string path) override
@@ -204,10 +152,7 @@ public:
 
     void SetActivity(bool isActive) override
     {
-        InputFileTextBox.enabled(isActive);
         OutputPathTextBox.enabled(isActive);
-
-        OpenFileButton.enabled(isActive);
         SelectOutputPathButton.enabled(isActive);
     }
 
@@ -220,11 +165,6 @@ protected:
     nana::group group1;
     nana::panel<true> panel32;
     nana::place panel32_place_;
-    nana::panel<true> panel4;
-    nana::place panel4_place_;
-    nana::label label1;
-    nana::textbox InputFileTextBox;
-    nana::button OpenFileButton;
     nana::panel<true> panel5;
     nana::place panel5_place_;
     nana::label label11;

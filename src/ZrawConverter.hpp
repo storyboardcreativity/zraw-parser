@@ -15,7 +15,7 @@ public:
     ZrawConverter(ZrawProcessingModel& model, IConsoleOutput& console, IProgressBar& progressBar)
         : _model(model), _console(console), _progressBar(progressBar), _isStarted(false), _itsTimeToStopOkay(false) {}
 
-    void StartProcess()
+    void StartProcess(std::vector<std::string> selectedFilesPaths)
     {
         if (_isStarted)
         {
@@ -35,7 +35,7 @@ public:
             std::ref(_itsTimeToStopOkay),
             std::ref(_console),
             std::ref(_progressBar),
-            _model.InputFilePath_get(),
+            selectedFilesPaths,
             _model.OutputFolderPath_get());
     }
 
@@ -68,52 +68,63 @@ protected:
     std::atomic<bool> _isStarted;
     std::atomic<bool> _itsTimeToStopOkay;
 
-    void TaskThreadMethod(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput& console, IProgressBar& progressBar, std::string inputFilePath, std::string outputFilePath)
+    void TaskThreadMethod(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput& console, IProgressBar& progressBar, std::vector<std::string> vec, std::string outputFilePath)
     {
         console.printf("ZRAW Converter - Task Started!");
 
         progressBar.ChangePercent(0);
         progressBar.SetDescription("Starting conversion process...");
 
-        ZrawNewExtractor extractor;
-        switch (extractor.ProcessConversion(itsTimeToStopOkay, console, progressBar, inputFilePath, outputFilePath))
+        for (auto it = vec.begin(); it != vec.end(); ++it)
         {
-        case ZrawNewExtractor::Done:
-            console.printf("Finished conversion process\n");
-            progressBar.SetDescription("Finished conversion process!");
-            progressBar.ChangePercent(100);
-            break;
+            if (itsTimeToStopOkay)
+            {
+                console.printf("Interrupted! Stopped.\n");
+                progressBar.SetDescription("Interrupted! Stopped.");
+                progressBar.ChangePercent(0);
+                break;
+            }
 
-        case ZrawNewExtractor::InputFileOpenFailed:
-            console.printf("Failed to open input file!\n");
-            progressBar.SetDescription("Failed to open input file! Stopped.");
-            progressBar.ChangePercent(0);
-            break;
+            ZrawNewExtractor extractor;
+            switch (extractor.ProcessConversion(itsTimeToStopOkay, console, progressBar, *it, outputFilePath))
+            {
+            case ZrawNewExtractor::Done:
+                console.printf("Finished conversion process\n");
+                progressBar.SetDescription("Finished conversion process!");
+                progressBar.ChangePercent(100);
+                break;
 
-        case ZrawNewExtractor::DirectoryCreationFailed:
-            console.printf("Failed to create output directory!\n");
-            progressBar.SetDescription("Failed to create output directory! Stopped.");
-            progressBar.ChangePercent(0);
-            break;
+            case ZrawNewExtractor::InputFileOpenFailed:
+                console.printf("Failed to open input file!\n");
+                progressBar.SetDescription("Failed to open input file! Stopped.");
+                progressBar.ChangePercent(0);
+                break;
 
-        case ZrawNewExtractor::Interrupted:
-            console.printf("Interrupted! Stopped.\n");
-            progressBar.SetDescription("Interrupted! Stopped.");
-            progressBar.ChangePercent(0);
-            break;
+            case ZrawNewExtractor::DirectoryCreationFailed:
+                console.printf("Failed to create output directory!\n");
+                progressBar.SetDescription("Failed to create output directory! Stopped.");
+                progressBar.ChangePercent(0);
+                break;
 
-        case ZrawNewExtractor::OutputFileOpenFailed:
-            console.printf("Failed to open output file! Stopped.\n");
-            progressBar.SetDescription("Failed to open output file! Stopped.");
-            progressBar.ChangePercent(0);
-            break;
+            case ZrawNewExtractor::Interrupted:
+                console.printf("Interrupted! Stopped.\n");
+                progressBar.SetDescription("Interrupted! Stopped.");
+                progressBar.ChangePercent(0);
+                break;
 
-        default:
-        case ZrawNewExtractor::NotImplemented:
-            console.printf("Feature is not implemented yet! Stopped.\n");
-            progressBar.SetDescription("Feature is not implemented yet! Stopped.");
-            progressBar.ChangePercent(0);
-            break;
+            case ZrawNewExtractor::OutputFileOpenFailed:
+                console.printf("Failed to open output file! Stopped.\n");
+                progressBar.SetDescription("Failed to open output file! Stopped.");
+                progressBar.ChangePercent(0);
+                break;
+
+            default:
+            case ZrawNewExtractor::NotImplemented:
+                console.printf("Feature is not implemented yet! Stopped.\n");
+                progressBar.SetDescription("Feature is not implemented yet! Stopped.");
+                progressBar.ChangePercent(0);
+                break;
+            }
         }
 
         console.printf("ZRAW Converter - Task Finished!");

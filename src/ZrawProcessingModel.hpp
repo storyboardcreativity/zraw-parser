@@ -21,17 +21,6 @@ public:
         _updateValidityInfo();
     }
 
-    void InputFilePath_set(std::string path)
-    {
-        _inputFilePath = path;
-        _updateValidityInfo();
-    }
-
-    std::string InputFilePath_get()
-    {
-        return _inputFilePath;
-    }
-
     void OutputFolderPath_set(std::string path)
     {
         _outputFolderPath = path;
@@ -57,7 +46,6 @@ public:
 
     struct ValidInfo
     {
-        std::string InputPath;
         std::string OutputPath;
 
         TracksInfo_t TracksInfo;
@@ -69,7 +57,6 @@ public:
             return nullptr;
 
         auto res = std::make_unique<ValidInfo>();
-        res->InputPath = InputFilePath_get();
         res->OutputPath = OutputFolderPath_get();
         res->TracksInfo = _tracksInfo;
 
@@ -86,14 +73,6 @@ protected:
 
     void _updateValidityInfoInternal()
     {
-        // Check input path (if it's empty)
-        if (InputFilePath_get().empty())
-        {
-            _isValid = false;
-            _validityDescriprion = "Input file is not set.";
-            return;
-        }
-
         // Check output path (if it's empty)
         if (OutputFolderPath_get().empty())
         {
@@ -102,50 +81,11 @@ protected:
             return;
         }
 
-        // Check input path
-        if (!_fileExists(InputFilePath_get()))
-        {
-            _isValid = false;
-            _validityDescriprion = "Could not open input file.";
-            return;
-        }
-
         // Check output path
         if (!_folderExists(OutputFolderPath_get()))
         {
             _isValid = false;
             _validityDescriprion = "Output path is invalid.";
-            return;
-        }
-
-        // Read input file
-        auto info = MovDetectTracks(InputFilePath_get().c_str());
-        _tracksInfo = info;
-
-        TRIGGER_EVENT(EventMovContainerLogUpdate, info.output_log);
-
-        // Find ZRAW tracks
-        int zrawTrackIndex = -1;
-        for (int i = 0; i < info.tracks.size(); ++i)
-        {
-            if (info.tracks[i].codec_name == "zraw")
-            {
-                if (zrawTrackIndex != -1)
-                {
-                    _isValid = false;
-                    _validityDescriprion = "Input file contains more than 1 ZRAW track!";
-                    return;
-                }
-
-                zrawTrackIndex = i;
-            }
-        }
-
-        // Exit if file does not have any ZRAW tracks
-        if (zrawTrackIndex == -1)
-        {
-            _isValid = false;
-            _validityDescriprion = "Input file does not contain any ZRAW tracks!";
             return;
         }
 
@@ -177,7 +117,6 @@ protected:
         return false;
     }
 
-    std::string _inputFilePath;
     std::string _outputFolderPath;
 
     bool _isValid;
