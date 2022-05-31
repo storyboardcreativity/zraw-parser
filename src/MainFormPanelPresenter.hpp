@@ -12,12 +12,13 @@ class MainFormPanelPresenter
 {
 public:
     MainFormPanelPresenter(
+        ZrawProcessingModel& model,
         std::unique_ptr<FileSelectionPresenter> fsp,
         std::unique_ptr<InputFileInfoPresenter> ifip,
         std::unique_ptr<BatchConversionListPresenter> bclp,
         IMainFormPanelView& mfp,
         IConsoleOutput& debug_visitor
-    ) : _fsp(std::move(fsp)), _ifip(std::move(ifip)), _bclp(std::move(bclp)), _mfp(mfp), _debug_visitor(debug_visitor), _converter(_model, debug_visitor, mfp.ProgressBar())
+    ) : _fsp(std::move(fsp)), _ifip(std::move(ifip)), _bclp(std::move(bclp)), _mfp(mfp), _debug_visitor(debug_visitor), _model(model), _converter(_model, debug_visitor, mfp.ProgressBar())
     {
         _fsp->EventOutputPathSelection += MakeDelegate(this, &MainFormPanelPresenter::OnOutputPathSelection);
 
@@ -64,7 +65,6 @@ protected:
         if (isValid)
         {
             _mfp.ChangeProcessButtonText("Convert");
-            _ifip->UpdateInfo(_model);
         }
     }
 
@@ -87,7 +87,7 @@ protected:
         _fsp->SetActivity(false);
         _fsp->SetStatusText("Converting...", true);
 
-        _converter.StartProcess(_bclp->GetCheckedPathsList());
+        _converter.StartProcess();
     }
 
     void OnConversionProcessFinish()
@@ -108,7 +108,7 @@ protected:
 
     IConsoleOutput& _debug_visitor;
 
-    ZrawProcessingModel _model;
+    ZrawProcessingModel& _model;
     ZrawConverter _converter;
 
     std::string _inputFilePath;

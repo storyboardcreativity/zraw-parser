@@ -34,9 +34,10 @@ public:
         _mainPanel->AddTab("About", *_aboutView);
 
         _mainPanelPresenter = std::make_unique<MainFormPanelPresenter>(
+            _model,
             std::make_unique<FileSelectionPresenter>(*_fsuc0, _debugView->Console()),
-            std::make_unique<InputFileInfoPresenter>(*_ifiuc0, _debugView->Console()),
-            std::make_unique<BatchConversionListPresenter>(*_bcluc, _debugView->Console()),
+            std::make_unique<InputFileInfoPresenter>(_model, *_ifiuc0, _debugView->Console()),
+            std::make_unique<BatchConversionListPresenter>(_model, *_bcluc, _debugView->Console()),
             *_mainPanel,
             _debugView->Console());
     }
@@ -47,6 +48,8 @@ public:
     }
 
 protected:
+    ZrawProcessingModel _model;
+
     std::unique_ptr<MainForm> _view;
     std::unique_ptr<MainFormPanel> _mainPanel;
 

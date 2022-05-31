@@ -44,14 +44,42 @@ public:
         _listboxAddedFiles.enabled(true);
 	}
 
-    // Use this function only when control is locked!
-    std::vector<std::string> GetCheckedPathsList() override
+    void AddPath(std::string path, std::string type, bool checked) override
 	{
-        std::vector<std::string> res;
-        for (auto it = _items.begin(); it != _items.end(); ++it)
-            if (it->second)
-                res.push_back(it->first);
-        return res;
+        const std::filesystem::path fspath(path);
+
+        auto cat = _listboxAddedFiles.at(0);
+        for (auto it = cat.begin(); it != cat.end(); ++it)
+        {
+            if (it->text(2) == fspath.string())
+            {
+                it->check(checked, false);
+                return;
+            }
+        }
+
+        cat.append({ fspath.filename().string(), (type == "") ? "---" : type, fspath.string() });
+        cat.back().check(checked, false);
+	}
+
+    void RemovePath(std::string path) override
+	{
+        throw "Not implemented yet.";
+	}
+
+    void SetPathEnabled(std::string path, bool checked)
+	{
+        const std::filesystem::path fspath(path);
+
+        const auto cat = _listboxAddedFiles.at(0);
+        for (auto it = cat.begin(); it != cat.end(); ++it)
+        {
+            if (it->text(2) == fspath.string())
+            {
+                if (it->checked() != checked)
+                    it->check(checked, false);
+            }
+        }
 	}
 
 private:
@@ -67,15 +95,19 @@ private:
 		_listboxAddedFiles.sortable(false);
         _listboxAddedFiles.events().checked([&](const nana::arg_listbox& args)
         {
-            _items[args.item.text(2)] = args.item.checked();
+            // Notify owner about changes
+            TRIGGER_EVENT(EventInputFileEnabled, args.item.text(2), args.item.checked());
         });
         _listboxAddedFiles.events().selected([&](const nana::arg_listbox& args)
         {
-            // TODO: ...
+            TRIGGER_EVENT(EventInputFileSelected, args.item.text(2));
         });
         _listboxAddedFiles.events().mouse_dropfiles([&](const nana::arg_dropfiles& arg)
         {
-            _addFiles(arg.files);
+            std::vector<std::string> paths;
+            for (auto it = arg.files.begin(); it != arg.files.end(); ++it)
+                paths.push_back(it->string());
+            TRIGGER_EVENT(EventInputFilesAdded, paths);
         });
         _listboxAddedFiles.enable_dropfiles(true);
 
@@ -91,28 +123,17 @@ private:
             fb.add_filter("All Files", "*.*");
             fb.allow_multi_select(true);
 
-            _addFiles(fb());
+            std::vector<std::string> paths;
+            auto files = fb();
+            for (auto it = files.begin(); it != files.end(); ++it)
+                paths.push_back(it->string());
+
+            TRIGGER_EVENT(EventInputFilesAdded, paths);
         });
 
         _initCategories();
 
 		place_.collocate();
-	}
-
-    void _addFiles(std::vector<std::filesystem::path> files)
-	{
-        auto cat = _listboxAddedFiles.at(0);
-
-        for (auto it = files.begin(); it != files.end(); ++it)
-        {
-            auto item_it = _items.find(it->string());
-            if (item_it == _items.end())
-            {
-                cat.append({ it->filename().string(), "unknown", it->string() });
-                cat.back().check(true, false);
-                _items[it->string()] = true;
-            }
-        }
 	}
 
     void _initCategories()
@@ -122,11 +143,8 @@ private:
         _listboxAddedFiles.append_header("File Path", 550 - 240);
 	}
 
-
 protected:
 	nana::place place_;
 	nana::listbox _listboxAddedFiles;
 	nana::button _buttonAddFiles;
-
-    std::map<std::string, bool> _items;
 };
