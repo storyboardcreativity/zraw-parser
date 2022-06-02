@@ -48,14 +48,21 @@ private:
         if (!initialized_)
         {
             place_.bind(*this);
-            place_.div("margin=[5,5,5,5] <vert margin=[5,5,5,5] gap=2 arrange=[10,146,variable] field1>");
+
+            // 146 is a vertical image control size
+            place_.div("margin=[5,5,5,5] <vert margin=[5,5,5,5] gap=2 arrange=[0,146,variable] field1>");
+
             // panel1
             panel1.create(*this);
             place_["field1"] << panel1;
             // panel2
             panel2.create(*this);
             panel2_place_.bind(panel2);
+
+            // 488 is a horizontal image control size
+            // 146 is a vertical image control size
             panel2_place_.div("weight=146 margin=[5,5,5,5] <margin=[0,0,0,0] gap=2 arrange=[variable,488,variable] field2>");
+
             place_["field1"] << panel2;
             // panel3
             panel3.create(panel2);
@@ -79,7 +86,10 @@ private:
             // panel21
             panel21.create(*this);
             panel21_place_.bind(panel21);
-            panel21_place_.div("vert margin=[0,0,0,0] <vert margin=[0,0,0,0] gap=2 arrange=[40,variable] field3><margin=[30,150,30,150] btn_place>");
+
+            // 30 is a bold title vertical size
+            panel21_place_.div("vert margin=[0,0,0,0] <vert margin=[0,0,0,0] gap=2 arrange=[30,variable] field3><margin=[30,150,30,150] btn_place>");
+
             place_["field1"] << panel21;
             // label1
             label1.create(panel21);
