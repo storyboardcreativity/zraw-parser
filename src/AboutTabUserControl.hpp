@@ -84,7 +84,13 @@ private:
             // label1
             label1.create(panel21);
             panel21_place_["field3"] << label1;
-            label1.caption(std::string("ZRAW Parser for Windows v") + std::string(ZRAW_PARSER_VERSION_STRING) + "\nby Zaripov R.");
+#ifdef _WIN32
+            label1.caption(std::string("ZRAW Video Converter for Windows v") + std::string(ZRAW_PARSER_VERSION_STRING) + "\nby Zaripov R.");
+#elif __linux__
+            label1.caption(std::string("ZRAW Video Converter for Linux v") + std::string(ZRAW_PARSER_VERSION_STRING) + "\nby Zaripov R.");
+#else
+            label1.caption(std::string("ZRAW Video Converter v") + std::string(ZRAW_PARSER_VERSION_STRING) + "\nby Zaripov R.");
+#endif
             label1.text_align(static_cast<nana::align>(1), static_cast<nana::align_v>(1));
             // panel4
             panel4.create(panel21);
@@ -98,7 +104,7 @@ private:
             label4.create(panel4);
             panel4_place_["field4"] << label4;
             label4.typeface(nana::paint::font("", 9, { 1000, false, false, false }));
-            label4.caption("ZRAW Parser is a free, open-source solution that allows raw data extraction from ZRAW video files. If you like it, please consider contributing to my open-source development efforts with a donation.");
+            label4.caption("ZRAW Video Converter is a free, open-source solution that allows raw data extraction from ZRAW video files. If you like it, please consider contributing to my open-source development efforts with a donation.");
             label4.text_align(static_cast<nana::align>(1), static_cast<nana::align_v>(1));
             // panel6
             panel6.create(panel4);
@@ -111,10 +117,11 @@ private:
             {
 #ifdef _MSC_VER
                 ShellExecute(NULL, L"open", L"https://ko-fi.com/storyboardcreativity", NULL, NULL, SW_SHOWNORMAL);
-#else
+#elif __linux__
                 system("xdg-open https://ko-fi.com/storyboardcreativity");
+#else
+#error Unknown OS!
 #endif
-                
             });
 
             drawing_ = new nana::drawing(panel31);

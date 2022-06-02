@@ -25,7 +25,7 @@ protected:
     {
         place_.bind(*this);
         place_.div("margin=[5,5,5,5] gap=2 _field_");
-        caption("ZRAW Parser");
+        caption("ZRAW Video Converter");
 
         place_.collocate();
     }

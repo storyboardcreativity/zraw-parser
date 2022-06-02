@@ -6,18 +6,20 @@
 #include <ZrawProcessingModel.hpp>
 #include <IMainFormPanelView.hpp>
 #include <ZrawConverter.hpp>
+#include <BatchConversionListPresenter.hpp>
 
 class MainFormPanelPresenter
 {
 public:
     MainFormPanelPresenter(
+        ZrawProcessingModel& model,
         std::unique_ptr<FileSelectionPresenter> fsp,
         std::unique_ptr<InputFileInfoPresenter> ifip,
+        std::unique_ptr<BatchConversionListPresenter> bclp,
         IMainFormPanelView& mfp,
         IConsoleOutput& debug_visitor
-    ) : _fsp(std::move(fsp)), _ifip(std::move(ifip)), _mfp(mfp), _debug_visitor(debug_visitor), _converter(_model, debug_visitor, mfp.ProgressBar())
+    ) : _fsp(std::move(fsp)), _ifip(std::move(ifip)), _bclp(std::move(bclp)), _mfp(mfp), _debug_visitor(debug_visitor), _model(model), _converter(_model, debug_visitor, mfp.ProgressBar())
     {
-        _fsp->EventInputFileSelection += MakeDelegate(this, &MainFormPanelPresenter::OnInputFileSelection);
         _fsp->EventOutputPathSelection += MakeDelegate(this, &MainFormPanelPresenter::OnOutputPathSelection);
 
         _mfp.EventProcessButtonClick += MakeDelegate(this, &MainFormPanelPresenter::OnProcessButtonClick);
@@ -45,15 +47,9 @@ public:
         _mfp.EventProcessButtonClick -= MakeDelegate(this, &MainFormPanelPresenter::OnProcessButtonClick);
 
         _fsp->EventOutputPathSelection -= MakeDelegate(this, &MainFormPanelPresenter::OnOutputPathSelection);
-        _fsp->EventInputFileSelection -= MakeDelegate(this, &MainFormPanelPresenter::OnInputFileSelection);
     }
 
 protected:
-
-    void OnInputFileSelection(std::string path)
-    {
-        _model.InputFilePath_set(path);
-    }
 
     void OnOutputPathSelection(std::string path)
     {
@@ -69,7 +65,6 @@ protected:
         if (isValid)
         {
             _mfp.ChangeProcessButtonText("Convert");
-            _ifip->UpdateInfo(_model);
         }
     }
 
@@ -86,6 +81,7 @@ protected:
             return;
         }
 
+        _bclp->Lock();
         _mfp.ChangeProcessButtonText("Cancel");
 
         _fsp->SetActivity(false);
@@ -98,6 +94,7 @@ protected:
     {
         _mfp.ChangeProcessButtonText("Convert");
         _fsp->SetActivity(true);
+        _bclp->Unlock();
 
         // Force model validity update
         OnModelValidityUpdate(_model.IsValid(), _model.ValidityDescriprion());
@@ -105,11 +102,13 @@ protected:
 
     std::unique_ptr<FileSelectionPresenter> _fsp;
     std::unique_ptr<InputFileInfoPresenter> _ifip;
+    std::unique_ptr<BatchConversionListPresenter> _bclp;
+
     IMainFormPanelView& _mfp;
 
     IConsoleOutput& _debug_visitor;
 
-    ZrawProcessingModel _model;
+    ZrawProcessingModel& _model;
     ZrawConverter _converter;
 
     std::string _inputFilePath;

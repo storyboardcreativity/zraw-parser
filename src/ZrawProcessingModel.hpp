@@ -12,24 +12,37 @@
 class ZrawProcessingModel
 {
 public:
+    typedef enum InputFileInfoState_e
+    {
+        NotConverted,
+        Unconvertable,
+        InProcess,
+        ConversionOk,
+        ConversionInterrupted,
+        ConversionFailed
+    } InputFileInfoState_t;
+
+    // Triggered on each model validity update (bool - isOk, string - description)
     DECLARE_EVENT(void, bool, std::string) EventValidityUpdate;
+
+    // ...
     DECLARE_EVENT(void, std::string) EventMovContainerLogUpdate;
 
-public:
+    // Triggered on each input file list change
+    DECLARE_EVENT(void) EventInputFilePathsUpdate;
+
+    // Triggered on each input file check (like [v] in the view)
+    DECLARE_EVENT(void, std::string, bool) EventInputFilePathEnabledUpdate;
+
+    // Triggered on each input file selection (click on it or smth else)
+    DECLARE_EVENT(void, std::string) EventInputFilePathSelectedUpdate;
+
+    // Triggered on each input file conversion state change
+    DECLARE_EVENT(void, std::string, InputFileInfoState_t) EventInputFilePathConversionStateUpdate;
+
     ZrawProcessingModel() : _isValid(false)
     {
         _updateValidityInfo();
-    }
-
-    void InputFilePath_set(std::string path)
-    {
-        _inputFilePath = path;
-        _updateValidityInfo();
-    }
-
-    std::string InputFilePath_get()
-    {
-        return _inputFilePath;
     }
 
     void OutputFolderPath_set(std::string path)
@@ -41,6 +54,118 @@ public:
     std::string OutputFolderPath_get()
     {
         return _outputFolderPath;
+    }
+
+    void InputFilePathActive_set(std::string path)
+    {
+        if (path == _inputFilePathActive)
+            return;
+
+        _inputFilePathActive = (_inputFilesPaths.find(path) == _inputFilesPaths.end()) ? "" : path;
+
+        TRIGGER_EVENT(EventInputFilePathSelectedUpdate, _inputFilePathActive);
+    }
+
+    std::string InputFilePathActive_get() const
+    {
+        return _inputFilePathActive;
+    }
+
+    bool InputFilePathEnabled_get(std::string path)
+    {
+        const auto it = _inputFilesPaths.find(path);
+        if (it == _inputFilesPaths.end())
+            return false;
+
+        return it->second.enabled;
+    }
+
+    std::string InputFilePathType_get(std::string path)
+    {
+        const auto it0 = _inputFilesPaths.find(path);
+        if (it0 == _inputFilesPaths.end())
+            return "";
+
+        auto& info = it0->second.tracksInfo;
+        if (info.tracks.size() == 0)
+            return "";
+
+        std::string res = "";
+        for (auto it = info.tracks.begin(); it != info.tracks.end(); ++it)
+        {
+            if (it->codec_name == "zraw")
+            {
+                switch (it->zraw_raw_version)
+                {
+                case 0x12EA78D2:
+                    res = "RAW CFA";
+                    break;
+
+                case 0x45A32DEF:
+                    res = "HEVC";
+                    {
+                        switch (it->zraw_unk1)
+                        {
+                        case 0:
+                            res += " (AES)";
+                            break;
+
+                        case 1:
+                            res += " (XOR)";
+                            break;
+
+                        default:
+                            res += " (UNK)";
+                            break;
+                        }
+                    }
+                    break;
+
+                default:
+                    break;
+                }
+
+                break;
+            }
+        }
+        return res;
+    }
+
+    void InputFilePath_add(std::vector<std::string>& paths)
+    {
+        bool anythingChanged = false;
+
+        for (auto it = paths.begin(); it != paths.end(); ++it)
+        {
+            if (_inputFilesPaths.find(*it) != _inputFilesPaths.end())
+                continue;
+
+            InputFileInfo_t info;
+            info.fileVerified = false;
+            info.isConvertable = false;
+            info.enabled = true;
+            _inputFilesPaths[*it] = info;
+
+            anythingChanged = true;
+        }
+
+        if (!anythingChanged)
+            return;
+        
+        _updateInputFilesValidity();
+
+        TRIGGER_EVENT(EventInputFilePathsUpdate);
+    }
+
+    void InputFilePath_remove(std::string path)
+    {
+        const auto it = _inputFilesPaths.find(path);
+        if (it == _inputFilesPaths.end())
+            return;
+
+        _inputFilesPaths.erase(it);
+
+        TRIGGER_EVENT(EventInputFilePathsUpdate);
     }
 
     // Returns if model is ready to start conversion process
@@ -57,7 +182,6 @@ public:
 
     struct ValidInfo
     {
-        std::string InputPath;
         std::string OutputPath;
 
         TracksInfo_t TracksInfo;
@@ -65,17 +189,99 @@ public:
 
     std::unique_ptr<ValidInfo> ValidInfo_get()
     {
-        if (!IsValid())
+        const auto it = _inputFilesPaths.find(InputFilePathActive_get());
+        if (it == _inputFilesPaths.end())
             return nullptr;
 
         auto res = std::make_unique<ValidInfo>();
-        res->InputPath = InputFilePath_get();
         res->OutputPath = OutputFolderPath_get();
-        res->TracksInfo = _tracksInfo;
+        res->TracksInfo = it->second.tracksInfo;
 
         return res;
     }
 
+    void InputFilePath_enable(std::string path, bool isEnabled)
+    {
+        const auto it = _inputFilesPaths.find(path);
+        if (it == _inputFilesPaths.end())
+            return;
+
+        if (it->second.isConvertable == false)
+            return;
+
+        it->second.enabled = isEnabled;
+        InputFilePathConversionState_set(path, NotConverted);
+
+        TRIGGER_EVENT(EventInputFilePathEnabledUpdate, it->first, isEnabled);
+    }
+
+    std::vector<std::string> InputFilePathsEnabled_get()
+    {
+        std::vector<std::string> res;
+
+        for (auto it = _inputFilesPaths.begin(); it != _inputFilesPaths.end(); ++it)
+        {
+            if (!it->second.enabled)
+                continue;
+
+            if (!it->second.fileVerified)
+                continue;
+
+            if (!it->second.isConvertable)
+                continue;
+
+            res.push_back(it->first);
+        }
+
+        return res;
+    }
+
+    std::vector<std::string> InputFilePaths_get()
+    {
+        std::vector<std::string> res;
+
+        for (auto it = _inputFilesPaths.begin(); it != _inputFilesPaths.end(); ++it)
+            res.push_back(it->first);
+
+        return res;
+    }
+
+    /* Conversion State */
+
+    void InputFilePathConversionState_set(std::string path, InputFileInfoState_t state)
+    {
+        const auto it = _inputFilesPaths.find(path);
+        if (it == _inputFilesPaths.end())
+            return;
+
+        if (it->second.conversionState == state)
+            return;
+
+        it->second.conversionState = state;
+
+        TRIGGER_EVENT(EventInputFilePathConversionStateUpdate, path, state);
+    }
+
+    InputFileInfoState_t InputFilePathConversionState_get(std::string path)
+    {
+        const auto it = _inputFilesPaths.find(path);
+        if (it == _inputFilesPaths.end())
+            return Unconvertable;
+
+        return it->second.conversionState;
+    }
+
+    /* Progress Bar */
+
+    // WARNING! Do not save this returned reference! It can become inactive after the input file is deleted from the list!
+    IProgressBar* InputFilePathProgressBar_get(std::string path)
+    {
+        const auto it = _inputFilesPaths.find(path);
+        if (it == _inputFilesPaths.end())
+            return nullptr;
+
+        return &it->second.conversionProgress;
+    }
 protected:
 
     void _updateValidityInfo()
@@ -86,14 +292,6 @@ protected:
 
     void _updateValidityInfoInternal()
     {
-        // Check input path (if it's empty)
-        if (InputFilePath_get().empty())
-        {
-            _isValid = false;
-            _validityDescriprion = "Input file is not set.";
-            return;
-        }
-
         // Check output path (if it's empty)
         if (OutputFolderPath_get().empty())
         {
@@ -102,11 +300,10 @@ protected:
             return;
         }
 
-        // Check input path
-        if (!_fileExists(InputFilePath_get()))
+        if (!_updateInputFilesValidity())
         {
             _isValid = false;
-            _validityDescriprion = "Could not open input file.";
+            _validityDescriprion = "No any ZRAW files were found in the input file list.";
             return;
         }
 
@@ -118,40 +315,141 @@ protected:
             return;
         }
 
-        // Read input file
-        auto info = MovDetectTracks(InputFilePath_get().c_str());
-        _tracksInfo = info;
+        // Set validity to "true" (all is ok if we are here)
+        _isValid = true;
+        _validityDescriprion = "Ready to process conversion!";
+    }
 
-        TRIGGER_EVENT(EventMovContainerLogUpdate, info.output_log);
+    bool _updateInputFilesValidity()
+    {
+        bool atLeastOneZrawFileIsFound = false;
+        for (auto it = _inputFilesPaths.begin(); it != _inputFilesPaths.end(); ++it)
+        {
+            auto& path = it->first;
+            auto& pathInfo = it->second;
+
+            if (pathInfo.fileVerified)
+            {
+                if (!pathInfo.isConvertable)
+                    continue;
+            }
+            else if (!_checkFile(path, pathInfo))
+                continue;
+
+            atLeastOneZrawFileIsFound = true;
+        }
+
+        return atLeastOneZrawFileIsFound;
+    }
+
+    class ProgressBarInterface : public IProgressBar
+    {
+    public:
+        ProgressBarInterface() : _percent(0) {}
+
+        void ChangePercent(unsigned int percent) override
+        {
+            if (_percent == percent)
+                return;
+
+            _percent = percent;
+
+            TRIGGER_EVENT(EventPercentUpdate, this, percent);
+        }
+
+        void SetDescription(std::string format, ...) override
+        {
+            // 1. Calculate buffer length
+            va_list args;
+            va_start(args, format);
+            auto bufsz = vsnprintf(NULL, 0, format.c_str(), args);
+            va_end(args);
+
+            // 2. Create buffer
+            char *buffer = new char[bufsz + 1];
+
+            // 3. Print to buffer
+            va_start(args, format);
+            vsprintf(buffer, format.c_str(), args);
+            va_end(args);
+
+            // 4. Set caption
+            auto str = std::string(buffer);
+            if (_description != str)
+            {
+                _description = std::string(buffer);
+                TRIGGER_EVENT(EventDescriptionUpdate, this, _description);
+            }
+
+            // 5. Remove buffer
+            delete[] buffer;
+        }
+
+    protected:
+        unsigned int _percent;
+        std::string _description;
+    };
+
+    typedef struct
+    {
+        bool fileVerified;
+        bool isConvertable;
+        bool enabled;
+
+        TracksInfo_t tracksInfo;
+
+        InputFileInfoState_t conversionState;
+        ProgressBarInterface conversionProgress;
+    } InputFileInfo_t;
+    std::map<std::string, InputFileInfo_t> _inputFilesPaths;
+
+    bool _checkFile(std::string path, InputFileInfo_t& info)
+    {
+        info.fileVerified = true;
+        info.isConvertable = false;
+
+        if (path.empty())
+        {
+            InputFilePathConversionState_set(path, Unconvertable);
+            return false;
+        }
+
+        if (!_fileExists(path))
+        {
+            InputFilePathConversionState_set(path, Unconvertable);
+            return false;
+        }
+
+        // Read input file
+        auto tracksInfo = MovDetectTracks(path.c_str());
+        info.tracksInfo = tracksInfo;
+
+        //TRIGGER_EVENT(EventMovContainerLogUpdate, info.output_log);
 
         // Find ZRAW tracks
         int zrawTrackIndex = -1;
-        for (int i = 0; i < info.tracks.size(); ++i)
+        for (int i = 0; i < tracksInfo.tracks.size(); ++i)
         {
-            if (info.tracks[i].codec_name == "zraw")
+            if (tracksInfo.tracks[i].codec_name == "zraw")
             {
+                // We can't have more than 1 ZRAW track in video file!
                 if (zrawTrackIndex != -1)
-                {
-                    _isValid = false;
-                    _validityDescriprion = "Input file contains more than 1 ZRAW track!";
-                    return;
-                }
+                    return false;
 
                 zrawTrackIndex = i;
             }
         }
 
-        // Exit if file does not have any ZRAW tracks
-        if (zrawTrackIndex == -1)
+        if (zrawTrackIndex != -1)
         {
-            _isValid = false;
-            _validityDescriprion = "Input file does not contain any ZRAW tracks!";
-            return;
+            info.isConvertable = true;
+            InputFilePathConversionState_set(path, NotConverted);
         }
+        else
+            InputFilePathConversionState_set(path, Unconvertable);
 
-        // Set validity to "true" (all is ok if we are here)
-        _isValid = true;
-        _validityDescriprion = "Ready to process conversion!";
+        // Exit if file does not have any ZRAW tracks
+        return info.isConvertable;
     }
 
     bool _fileExists(const std::string& path)
@@ -177,11 +475,13 @@ protected:
         return false;
     }
 
-    std::string _inputFilePath;
     std::string _outputFolderPath;
+
+    std::string _inputFilePathActive;
 
     bool _isValid;
     std::string _validityDescriprion;
 
-    TracksInfo_t _tracksInfo;
+
+
 };

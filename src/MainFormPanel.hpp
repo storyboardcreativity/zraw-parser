@@ -139,8 +139,13 @@ protected:
 
         void ChangePercent(unsigned int percent) override
         {
+            if (_control.ProgressBarControl.value() == percent)
+                return;
+
             _control.ProgressBarControl.value(percent);
             _control.PercentLabel.caption(std::to_string(percent) + "%");
+
+            TRIGGER_EVENT(EventPercentUpdate, this, percent);
         }
 
         void SetDescription(std::string format, ...) override
@@ -160,7 +165,9 @@ protected:
             va_end(args);
 
             // 4. Set caption
-            _control.ProgressDescriptionLabel.caption(std::string(buffer));
+            const auto str = std::string(buffer);
+            _control.ProgressDescriptionLabel.caption(str);
+            TRIGGER_EVENT(EventDescriptionUpdate, this, str);
 
             // 5. Remove buffer
             delete[] buffer;

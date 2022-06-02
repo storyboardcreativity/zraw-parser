@@ -8,25 +8,21 @@
 class InputFileInfoPresenter
 {
 public:
-    InputFileInfoPresenter(IInputFileInfoView& view, IConsoleOutput& debug_visitor) : _view(view), _debug_visitor(debug_visitor)
+    InputFileInfoPresenter(ZrawProcessingModel& model, IInputFileInfoView& view, IConsoleOutput& debug_visitor) : _model(model), _view(view), _debug_visitor(debug_visitor)
     {
+        _model.EventInputFilePathSelectedUpdate += MakeDelegate(this, &InputFileInfoPresenter::OnInputPathSelectionChangedInModel);
     }
 
     ~InputFileInfoPresenter()
     {
+        _model.EventInputFilePathSelectedUpdate -= MakeDelegate(this, &InputFileInfoPresenter::OnInputPathSelectionChangedInModel);
     }
 
-    void UpdateInfo(ZrawProcessingModel& model)
+    void OnInputPathSelectionChangedInModel(std::string path)
     {
         _view.Clear();
 
-        if (!model.IsValid())
-        {
-            _debug_visitor.printf("Warning! Attempt to show info of not valid model. Skipped.");
-            return;
-        }
-
-        auto info = model.ValidInfo_get();
+        auto info = _model.ValidInfo_get();
         if (info == nullptr)
         {
             _debug_visitor.printf("Warning! Attempt to show info of null model. Skipped.");
@@ -35,8 +31,9 @@ public:
 
         // Paths category
         auto& cat0 = _view.CreateCategory("Paths");
-        cat0.SetProperty("Input file", info->InputPath);
         cat0.SetProperty("Output folder", info->OutputPath);
+
+        cat0.SetProperty("Input file", path);
 
         // Tracks category
         auto& cat = _view.CreateCategory("Tracks");
@@ -110,6 +107,7 @@ public:
 
 protected:
 
+    ZrawProcessingModel& _model;
     IInputFileInfoView& _view;
     IConsoleOutput& _debug_visitor;
 };

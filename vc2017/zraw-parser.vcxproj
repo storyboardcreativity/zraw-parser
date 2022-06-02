@@ -223,10 +223,13 @@ xcopy /e /k /h /i /y $(SolutionDir)..\res $(SolutionDir)..\build\res\</Command>
   <ItemGroup>
     <ClInclude Include="..\src\AboutTabUserControl.hpp" />
     <ClInclude Include="..\src\AboutTabLogo.hpp" />
+    <ClInclude Include="..\src\BatchConversionListPresenter.hpp" />
+    <ClInclude Include="..\src\BatchConversionListUserControl.hpp" />
     <ClInclude Include="..\src\byteswap.hpp" />
     <ClInclude Include="..\src\DebugTabUserControl.hpp" />
     <ClInclude Include="..\src\FileSelectionPresenter.hpp" />
     <ClInclude Include="..\src\FileSelectionUserControl.hpp" />
+    <ClInclude Include="..\src\IBatchConversionListView.hpp" />
     <ClInclude Include="..\src\IConsoleOutput.hpp" />
     <ClInclude Include="..\src\IConsoleView.hpp" />
     <ClInclude Include="..\src\IFileSelectionView.hpp" />
