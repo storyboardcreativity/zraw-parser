@@ -17,10 +17,12 @@ public:
         _view.EventInputFileEnabled += MakeDelegate(this, &BatchConversionListPresenter::OnPathEnabledInView);
         _model.EventInputFilePathEnabledUpdate += MakeDelegate(this, &BatchConversionListPresenter::OnPathEnabledInModel);
         _model.EventInputFilePathsUpdate += MakeDelegate(this, &BatchConversionListPresenter::OnInputFilePathsUpdateInModel);
+        _model.EventInputFilePathConversionStateUpdate += MakeDelegate(this, &BatchConversionListPresenter::OnInputFilePathConversionStateChangeInModel);
     }
 
     ~BatchConversionListPresenter()
     {
+        _model.EventInputFilePathConversionStateUpdate -= MakeDelegate(this, &BatchConversionListPresenter::OnInputFilePathConversionStateChangeInModel);
         _model.EventInputFilePathsUpdate -= MakeDelegate(this, &BatchConversionListPresenter::OnInputFilePathsUpdateInModel);
         _model.EventInputFilePathEnabledUpdate -= MakeDelegate(this, &BatchConversionListPresenter::OnPathEnabledInModel);
         _view.EventInputFileEnabled -= MakeDelegate(this, &BatchConversionListPresenter::OnPathEnabledInView);
@@ -64,8 +66,63 @@ protected:
     {
         auto pathsList = _model.InputFilePaths_get();
         for (auto it = pathsList.begin(); it != pathsList.end(); ++it)
+        {
             _view.AddPath(*it, _model.InputFilePathType_get(*it), _model.InputFilePathEnabled_get(*it));
+
+            if (_progressBars0.find(*it) == _progressBars0.end())
+            {
+                auto pbPtr = _model.InputFilePathProgressBar_get(*it);
+                _progressBars0[*it] = pbPtr;
+                _progressBars1[pbPtr] = *it;
+
+                pbPtr->EventPercentUpdate += MakeDelegate(this, &BatchConversionListPresenter::OnInputFilePathPercentChangeInProgressBar);
+                OnInputFilePathConversionStateChangeInModel(*it, _model.InputFilePathConversionState_get(*it));
+            }
+        }
     }
+
+    void OnInputFilePathPercentChangeInProgressBar(IProgressBar* pb, unsigned int percent)
+    {
+        auto pathIt = _progressBars1.find(pb);
+        if (pathIt == _progressBars1.end())
+            return;
+
+        _view.ChangeInputFilePercent(pathIt->second, percent);
+    }
+
+    void OnInputFilePathConversionStateChangeInModel(std::string path, ZrawProcessingModel::InputFileInfoState_t state)
+    {
+        switch (state)
+        {
+        case ZrawProcessingModel::Unconvertable:
+            _view.ChangeInputFileColor(path, 254, 162, 0, 1.0);
+            break;
+
+        case ZrawProcessingModel::InProcess:
+            _view.ChangeInputFileColor(path, 6, 25, 103, 1.0);
+            break;
+
+        case ZrawProcessingModel::ConversionOk:
+            _view.ChangeInputFileColor(path, 37, 123, 24, 1.0);
+            break;
+
+        case ZrawProcessingModel::ConversionFailed:
+            _view.ChangeInputFileColor(path, 164, 33, 13, 1.0);
+            break;
+
+        case ZrawProcessingModel::ConversionInterrupted:
+            _view.ChangeInputFileColor(path, 1, 112, 113, 1.0);
+            break;
+
+        case ZrawProcessingModel::NotConverted:
+        default:
+            _view.ChangeInputFileColor(path, 0, 0, 0, 1.0);
+            break;
+        }
+    }
+
+    std::map<std::string, IProgressBar*> _progressBars0;
+    std::map<IProgressBar*, std::string> _progressBars1;
 
     ZrawProcessingModel& _model;
     IBatchConversionListView& _view;

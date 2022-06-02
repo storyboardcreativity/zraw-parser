@@ -20,4 +20,6 @@ public:
     virtual void RemovePath(std::string path) = 0;
 
     virtual void SetPathEnabled(std::string path, bool checked) = 0;
+    virtual void ChangeInputFilePercent(std::string path, unsigned int percent) = 0;
+    virtual void ChangeInputFileColor(std::string path, unsigned int r, unsigned int g, unsigned int b, double alpha) = 0;
 };

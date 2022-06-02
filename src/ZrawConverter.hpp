@@ -34,9 +34,7 @@ public:
             &ZrawConverter::TaskThreadMethod, this,
             std::ref(_itsTimeToStopOkay),
             std::ref(_console),
-            std::ref(_progressBar),
-            _model.InputFilePathsEnabled_get(),
-            _model.OutputFolderPath_get());
+            std::ref(_progressBar));
     }
 
     void InterruptProcess()
@@ -68,75 +66,122 @@ protected:
     std::atomic<bool> _isStarted;
     std::atomic<bool> _itsTimeToStopOkay;
 
-    void TaskThreadMethod(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput& console, IProgressBar& progressBar, std::vector<std::string> vec, std::string outputFilePath)
+    void TaskThreadMethod(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput& console, IProgressBar& progressBarGlobal)
     {
+        auto vec = _model.InputFilePathsEnabled_get();
+        auto outputFilePath = _model.OutputFolderPath_get();
+
         console.printf("ZRAW Converter - Task Started!");
 
-        progressBar.ChangePercent(0);
-        progressBar.SetDescription("Starting conversion process...");
+        progressBarGlobal.ChangePercent(0);
+        progressBarGlobal.SetDescription("Starting conversion process...");
 
         if (vec.empty())
         {
-            progressBar.ChangePercent(100);
-            progressBar.SetDescription("Input file queue is empty!");
+            progressBarGlobal.ChangePercent(100);
+            progressBarGlobal.SetDescription("Input file queue is empty!");
             console.printf("Input file queue is empty!");
         }
         else
         {
-            for (auto it = vec.begin(); it != vec.end(); ++it)
+            float step = vec.empty() ? 0.0f : 100.0f / vec.size();
+            float pos = 0.0f;
+            int i = 0;
+
+            auto it = vec.begin();
+            for (; it != vec.end(); ++it)
             {
+                auto* progressBarLocalPtr = _model.InputFilePathProgressBar_get(*it);
+                if (progressBarLocalPtr == nullptr)
+                {
+                    console.printf("Warning! Could not get progress bar from model for path \"%s\" - skipping!\n", *it);
+                    progressBarGlobal.SetDescription("Failed! Stopped. (watch debug log)");
+                    progressBarGlobal.ChangePercent(0);
+                    break;
+                }
+                auto& progressBarLocal = *progressBarLocalPtr;
+
                 if (itsTimeToStopOkay)
                 {
                     console.printf("Interrupted! Stopped.\n");
-                    progressBar.SetDescription("Interrupted! Stopped.");
-                    progressBar.ChangePercent(0);
+
+                    progressBarLocal.SetDescription("Interrupted! Stopped.");
+                    progressBarLocal.ChangePercent(0);
+
+                    progressBarGlobal.SetDescription("Interrupted! Stopped.");
+                    progressBarGlobal.ChangePercent(0);
+
                     break;
                 }
 
+                progressBarGlobal.SetDescription("Processing %d file of %d...", i, vec.size());
+                _model.InputFilePathConversionState_set(*it, ZrawProcessingModel::InputFileInfoState_e::InProcess);
+
                 ZrawNewExtractor extractor;
-                switch (extractor.ProcessConversion(itsTimeToStopOkay, console, progressBar, *it, outputFilePath))
+                switch (extractor.ProcessConversion(itsTimeToStopOkay, console, progressBarLocal, *it, outputFilePath))
                 {
                 case ZrawNewExtractor::Done:
-                    console.printf("Finished conversion process\n");
-                    progressBar.SetDescription("Finished conversion process!");
-                    progressBar.ChangePercent(100);
+                    console.printf("Finished conversion process.\n");
+                    progressBarLocal.SetDescription("Finished conversion process!");
+                    progressBarLocal.ChangePercent(100);
 
                     _model.InputFilePath_enable(*it, false);
+                    _model.InputFilePathConversionState_set(*it, ZrawProcessingModel::InputFileInfoState_e::ConversionOk);
                     break;
 
                 case ZrawNewExtractor::InputFileOpenFailed:
                     console.printf("Failed to open input file!\n");
-                    progressBar.SetDescription("Failed to open input file! Stopped.");
-                    progressBar.ChangePercent(0);
+                    progressBarLocal.SetDescription("Failed to open input file! Stopped.");
+                    progressBarLocal.ChangePercent(0);
 
                     _model.InputFilePath_enable(*it, false);
+                    _model.InputFilePathConversionState_set(*it, ZrawProcessingModel::InputFileInfoState_e::ConversionFailed);
                     break;
 
                 case ZrawNewExtractor::DirectoryCreationFailed:
                     console.printf("Failed to create output directory!\n");
-                    progressBar.SetDescription("Failed to create output directory! Stopped.");
-                    progressBar.ChangePercent(0);
+                    progressBarLocal.SetDescription("Failed to create output directory! Stopped.");
+                    progressBarLocal.ChangePercent(0);
+
+                    _model.InputFilePathConversionState_set(*it, ZrawProcessingModel::InputFileInfoState_e::ConversionFailed);
                     break;
 
                 case ZrawNewExtractor::Interrupted:
                     console.printf("Interrupted! Stopped.\n");
-                    progressBar.SetDescription("Interrupted! Stopped.");
-                    progressBar.ChangePercent(0);
+                    progressBarLocal.SetDescription("Interrupted! Stopped.");
+                    progressBarLocal.ChangePercent(0);
+
+                    _model.InputFilePathConversionState_set(*it, ZrawProcessingModel::InputFileInfoState_e::ConversionInterrupted);
                     break;
 
                 case ZrawNewExtractor::OutputFileOpenFailed:
                     console.printf("Failed to open output file! Stopped.\n");
-                    progressBar.SetDescription("Failed to open output file! Stopped.");
-                    progressBar.ChangePercent(0);
+                    progressBarLocal.SetDescription("Failed to open output file! Stopped.");
+                    progressBarLocal.ChangePercent(0);
+
+                    _model.InputFilePathConversionState_set(*it, ZrawProcessingModel::InputFileInfoState_e::ConversionFailed);
                     break;
 
                 default:
                 case ZrawNewExtractor::NotImplemented:
                     console.printf("Feature is not implemented yet! Stopped.\n");
-                    progressBar.SetDescription("Feature is not implemented yet! Stopped.");
-                    progressBar.ChangePercent(0);
+                    progressBarLocal.SetDescription("Feature is not implemented yet! Stopped.");
+                    progressBarLocal.ChangePercent(0);
+
+                    _model.InputFilePathConversionState_set(*it, ZrawProcessingModel::InputFileInfoState_e::ConversionFailed);
                     break;
                 }
+
+                pos += step;
+                ++i;
+                progressBarGlobal.ChangePercent((unsigned int)pos);
+            }
+
+            if (it == vec.end())
+            {
+                console.printf("Finished conversion process.\n");
+                progressBarGlobal.SetDescription("Finished conversion process!");
+                progressBarGlobal.ChangePercent(100);
             }
         }
 
