@@ -198,6 +198,8 @@ protected:
 
         std::string err;
         dng_writer.WriteToFile(outputRawFilePath.c_str(), &err);
+
+		return true;
     }
 
     void _thread_func()
