@@ -4,3 +4,6 @@
 [submodule "nana"]
 	path = nana
 	url = https://github.com/cnjinhao/nana
+[submodule "tiny-mov-library"]
+	path = tiny-mov-library
+	url = https://github.com/storyboardcreativity/tiny-mov-library

@@ -86,49 +86,58 @@ public:
         if (it0 == _inputFilesPaths.end())
             return "";
 
-        auto& info = it0->second.tracksInfo;
-        if (info.tracks.size() == 0)
+        auto& info = it0->second.mov;
+        if (info.Tracks().size() == 0)
             return "";
 
         std::string res = "";
-        for (auto it = info.tracks.begin(); it != info.tracks.end(); ++it)
+        for (auto it = info.Tracks().begin(); it != info.Tracks().end(); ++it)
         {
-            if (it->codec_name == "zraw")
-            {
-                switch (it->zraw_raw_version)
-                {
-                case 0x12EA78D2:
-                    res = "RAW CFA";
-                    break;
+			auto& track = *it;
+			if (track.Media().Type() != TinyMovTrackMedia::Type_t::Video)
+				continue;
 
-                case 0x45A32DEF:
-                    res = "HEVC";
-                    {
-                        switch (it->zraw_unk1)
-                        {
-                        case 0:
-                            res += " (AES)";
-                            break;
+			auto& desc_table = track.Media().Info().DescriptionTable().VideoDescriptionTable();
+			if (desc_table.size() != 1)
+				continue;
 
-                        case 1:
-                            res += " (XOR)";
-                            break;
+			auto ext_zraw = desc_table[0].Ext_ZRAW();
+			if (!ext_zraw.exists)
+				continue;
 
-                        default:
-                            res += " (UNK)";
-                            break;
-                        }
-                    }
-                    break;
+			switch (ext_zraw.version)
+			{
+			case 0x12EA78D2:
+				res = "RAW CFA";
+				break;
 
-                default:
-                    break;
-                }
+			case 0x45A32DEF:
+				res = "HEVC";
+				{
+					switch (ext_zraw.unk1)
+					{
+					case 0:
+						res += " (AES)";
+						break;
 
-                break;
-            }
+					case 1:
+						res += " (XOR)";
+						break;
+
+					default:
+						res += " (UNK)";
+						break;
+					}
+				}
+				break;
+
+			default:
+				break;
+			}
+
+			break;
         }
-        return res;
+		return res;
     }
 
     void InputFilePath_add(std::vector<std::string>& paths)
@@ -184,7 +193,7 @@ public:
     {
         std::string OutputPath;
 
-        TracksInfo_t TracksInfo;
+		TinyMovFile FileInfo;
     };
 
     std::unique_ptr<ValidInfo> ValidInfo_get()
@@ -195,7 +204,7 @@ public:
 
         auto res = std::make_unique<ValidInfo>();
         res->OutputPath = OutputFolderPath_get();
-        res->TracksInfo = it->second.tracksInfo;
+		res->FileInfo = it->second.mov;
 
         return res;
     }
@@ -397,6 +406,7 @@ protected:
         bool enabled;
 
         TracksInfo_t tracksInfo;
+		TinyMovFile mov;
 
         InputFileInfoState_t conversionState;
         ProgressBarInterface conversionProgress;
@@ -421,24 +431,32 @@ protected:
         }
 
         // Read input file
-        auto tracksInfo = MovDetectTracks(path.c_str());
-        info.tracksInfo = tracksInfo;
+        //auto tracksInfo = MovDetectTracks(path.c_str());
+        //info.tracksInfo = tracksInfo;
+
+		TinyMovFileReader reader;
+		auto mov = reader.OpenMovFile(path.c_str());
+		info.mov = mov;
 
         //TRIGGER_EVENT(EventMovContainerLogUpdate, info.output_log);
 
         // Find ZRAW tracks
-        int zrawTrackIndex = -1;
-        for (int i = 0; i < tracksInfo.tracks.size(); ++i)
-        {
-            if (tracksInfo.tracks[i].codec_name == "zraw")
-            {
-                // We can't have more than 1 ZRAW track in video file!
-                if (zrawTrackIndex != -1)
-                    return false;
+		int zrawTrackIndex = -1;
+		for (int i = 0; i < mov.Tracks().size(); ++i)
+		{
+			auto& track = mov.Tracks()[i];
+			if (track.Media().Type() != TinyMovTrackMedia::Type_t::Video)
+				continue;
 
-                zrawTrackIndex = i;
-            }
-        }
+			auto& desc_table = track.Media().Info().DescriptionTable().VideoDescriptionTable();
+			if (desc_table.size() != 1)
+				continue;
+
+			auto& desc = desc_table[0];
+
+			if (desc.DataFormat() == MKTAG('z', 'r', 'a', 'w'))
+				zrawTrackIndex = i;
+		}
 
         if (zrawTrackIndex != -1)
         {
