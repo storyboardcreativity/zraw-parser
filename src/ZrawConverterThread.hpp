@@ -199,7 +199,7 @@ protected:
         std::string err;
         dng_writer.WriteToFile(outputRawFilePath.c_str(), &err);
 
-		return true;
+        return true;
     }
 
     void _thread_func()
@@ -219,6 +219,8 @@ protected:
 
                 _finished = true;
             }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     }
 
