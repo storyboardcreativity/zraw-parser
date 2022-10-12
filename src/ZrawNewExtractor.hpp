@@ -316,7 +316,8 @@ protected:
             mov.Tracks().push_back(*it);
 
         TinyMovFileWriter writer;
-        std::string output_mov_path = output_path + "/fragment.mov";
+		std::string fileName = remove_extension(base_name(mov.Path()));
+		std::string output_mov_path = output_path + "/" + fileName + ".mov";
         writer.SaveMovFile(mov, output_mov_path);
 
         return Done;
@@ -353,7 +354,8 @@ protected:
     ConversionResult process_zraw_XORred(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput &console, IProgressBar& progressBar, std::istream &f_in, TinyMovFile &mov, std::string &output_path)
     {
         // Prepare output file path
-        std::string file_path = output_path + "/fragment.mov";
+		std::string fileName = remove_extension(base_name(mov.Path()));
+		std::string file_path = output_path + "/" + fileName + ".mov";
         console.printf("Track output file path: %s\n", file_path.c_str());
 
         TinyMovFileWriter writer;
