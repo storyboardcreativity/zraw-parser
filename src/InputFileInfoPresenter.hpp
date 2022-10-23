@@ -39,116 +39,116 @@ public:
         auto& cat = _view.CreateCategory("Tracks");
         for (int i = 0; i < info->FileInfo.Tracks().size(); ++i)
         {
-			cat.SetProperty("Track #" + std::to_string(i), "Track #" + std::to_string(i));//info->TracksInfo.tracks[i].codec_name);
+            cat.SetProperty("Track #" + std::to_string(i), "Track #" + std::to_string(i));//info->TracksInfo.tracks[i].codec_name);
 
-			auto& track = info->FileInfo.Tracks()[i];
+            auto& track = info->FileInfo.Tracks()[i];
 
-			IInputFileInfoView::ICategory* trackCat = nullptr;
+            IInputFileInfoView::ICategory* trackCat = nullptr;
 
-			switch (track.Media().Type())
-			{
-			case TinyMovTrackMedia::Type_t::Video:
-			{
-				auto& desc_table = track.Media().Info().DescriptionTable().VideoDescriptionTable();
-				if (desc_table.size() != 1)
-					continue;
+            switch (track.Media().Type())
+            {
+            case TinyMovTrackMedia::Type_t::Video:
+            {
+                auto& desc_table = track.Media().Info().DescriptionTable().VideoDescriptionTable();
+                if (desc_table.size() != 1)
+                    continue;
 
-				auto& desc = desc_table[0];
+                auto& desc = desc_table[0];
 
-				trackCat = &_view.CreateCategory("Video (Track #" + std::to_string(i) + ")");
+                trackCat = &_view.CreateCategory("Video (Track #" + std::to_string(i) + ")");
 
-				trackCat->SetProperty("Frame Width", "%d", desc.Width());
-				trackCat->SetProperty("Frame Height", "%d", desc.Height());
+                trackCat->SetProperty("Frame Width", "%d", desc.Width());
+                trackCat->SetProperty("Frame Height", "%d", desc.Height());
 
-				auto zraw_ext = desc.Ext_ZRAW();
-				if (zraw_ext.exists)
-				{
-					trackCat->SetProperty("ZRAW Version", "0x%X", zraw_ext.version);
-					trackCat->SetProperty("ZRAW unk0 value", "0x%X", zraw_ext.unk0);
+                auto zraw_ext = desc.Ext_ZRAW();
+                if (zraw_ext.exists)
+                {
+                    trackCat->SetProperty("ZRAW Version", "0x%X", zraw_ext.version);
+                    trackCat->SetProperty("ZRAW unk0 value", "0x%X", zraw_ext.unk0);
 
-					switch (zraw_ext.version)
-					{
-					case 0x12EA78D2:
-						trackCat->SetProperty("Type", "Compressed RAW CFA");
-						break;
+                    switch (zraw_ext.version)
+                    {
+                    case 0x12EA78D2:
+                        trackCat->SetProperty("Type", "Compressed RAW CFA");
+                        break;
 
-					case 0x45A32DEF:
-						trackCat->SetProperty("Type", "HEVC bitstream");
-						{
-							switch (zraw_ext.unk1)
-							{
-							case 0:
-								trackCat->SetProperty("Encryption", "AES");
-								break;
+                    case 0x45A32DEF:
+                        trackCat->SetProperty("Type", "HEVC bitstream");
+                        {
+                            switch (zraw_ext.unk1)
+                            {
+                            case 0:
+                                trackCat->SetProperty("Encryption", "AES");
+                                break;
 
-							case 1:
-								trackCat->SetProperty("Encryption", "XOR");
-								break;
+                            case 1:
+                                trackCat->SetProperty("Encryption", "XOR");
+                                break;
 
-							default:
-								trackCat->SetProperty("Encryption", "Unknown");
-								break;
-							}
-						}
-						break;
+                            default:
+                                trackCat->SetProperty("Encryption", "Unknown");
+                                break;
+                            }
+                        }
+                        break;
 
-					default:
-						trackCat->SetProperty("Type", "Unknown");
-						break;
-					}
-				}
+                    default:
+                        trackCat->SetProperty("Type", "Unknown");
+                        break;
+                    }
+                }
 
-				break;
-			}
-			case TinyMovTrackMedia::Type_t::Audio:
-			{
-				auto& desc_table = track.Media().Info().DescriptionTable().AudioDescriptionTable();
-				if (desc_table.size() != 1)
-					continue;
+                break;
+            }
+            case TinyMovTrackMedia::Type_t::Audio:
+            {
+                auto& desc_table = track.Media().Info().DescriptionTable().AudioDescriptionTable();
+                if (desc_table.size() != 1)
+                    continue;
 
-				auto& desc = desc_table[0];
+                auto& desc = desc_table[0];
 
-				trackCat = &_view.CreateCategory("Audio (Track #" + std::to_string(i) + ")");
+                trackCat = &_view.CreateCategory("Audio (Track #" + std::to_string(i) + ")");
 
-				break;
-			}
-			case TinyMovTrackMedia::Type_t::Timecode:
-			{
-				auto& desc_table = track.Media().Info().DescriptionTable().TimecodeDescriptionTable();
-				if (desc_table.size() != 1)
-					continue;
+                break;
+            }
+            case TinyMovTrackMedia::Type_t::Timecode:
+            {
+                auto& desc_table = track.Media().Info().DescriptionTable().TimecodeDescriptionTable();
+                if (desc_table.size() != 1)
+                    continue;
 
-				auto& desc = desc_table[0];
+                auto& desc = desc_table[0];
 
-				trackCat = &_view.CreateCategory("Timecode (Track #" + std::to_string(i) + ")");
-				break;
-			}
-			default:
-			{
-				trackCat = &_view.CreateCategory("Unknown (Track #" + std::to_string(i) + ")");
-				break;
-			}
-			}
+                trackCat = &_view.CreateCategory("Timecode (Track #" + std::to_string(i) + ")");
+                break;
+            }
+            default:
+            {
+                trackCat = &_view.CreateCategory("Unknown (Track #" + std::to_string(i) + ")");
+                break;
+            }
+            }
 
-			if (track.Media().Info().ForcedSampleSize() != 0)
-				trackCat->SetProperty("Universal Sample Size", "%d", track.Media().Info().ForcedSampleSize());
+            if (track.Media().Info().ForcedSampleSize() != 0)
+                trackCat->SetProperty("Universal Sample Size", "%d", track.Media().Info().ForcedSampleSize());
 
-			auto& sampleSizesCat = _view.CreateCategory("Track #" + std::to_string(i) + " sample sizes");
-			auto& chunkOffsetsCat = _view.CreateCategory("Track #" + std::to_string(i) + " chunk offsets");
+            auto& sampleSizesCat = _view.CreateCategory("Track #" + std::to_string(i) + " sample sizes");
+            auto& chunkOffsetsCat = _view.CreateCategory("Track #" + std::to_string(i) + " chunk offsets");
 
-			sampleSizesCat.Lock();
-			chunkOffsetsCat.Lock();
+            sampleSizesCat.Lock();
+            chunkOffsetsCat.Lock();
 
-			auto& ssizes = track.Media().Info().SampleSizes();
-			for (uint64_t p = 0; p < ssizes.size(); ++p)
-				sampleSizesCat.SetProperty("Sample #" + std::to_string(p), "%lld (0x%llX)", ssizes[p], ssizes[p]);
+            auto& ssizes = track.Media().Info().SampleSizes();
+            for (uint64_t p = 0; p < ssizes.size(); ++p)
+                sampleSizesCat.SetProperty("Sample #" + std::to_string(p), "%lld (0x%llX)", ssizes[p], ssizes[p]);
 
-			auto& coffsets = track.Media().Info().ChunkOffsets();
-			for (uint64_t p = 0; p < coffsets.size(); ++p)
-				chunkOffsetsCat.SetProperty("Chunk #" + std::to_string(p), "%lld (0x%llX)", coffsets[p], coffsets[p]);
+            auto& coffsets = track.Media().Info().ChunkOffsets();
+            for (uint64_t p = 0; p < coffsets.size(); ++p)
+                chunkOffsetsCat.SetProperty("Chunk #" + std::to_string(p), "%lld (0x%llX)", coffsets[p], coffsets[p]);
 
-			sampleSizesCat.Unlock();
-			chunkOffsetsCat.Unlock();
+            sampleSizesCat.Unlock();
+            chunkOffsetsCat.Unlock();
         }
     }
 

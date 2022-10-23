@@ -11,6 +11,12 @@
 
 #include <IMainFormPanelView.hpp>
 
+#include "theme/conv_button.hpp"
+#include "theme/conv_label.hpp"
+#include "theme/conv_tabbar.hpp"
+#include "theme/conv_progress.hpp"
+
+#include "ViewThemeSingleton.hpp"
 
 class MainFormPanel : public nana::panel<true>, public IMainFormPanelView
 {
@@ -23,9 +29,14 @@ public:
         _progressBarInterface(ProgressBarInterface(*this))
     {
         this->Create(wd, r, visible);
+
+        ViewThemeSingleton::Instance().EventThemeChanged += MakeDelegate(this, &MainFormPanel::OnThemeChanged);
     }
 
-    ~MainFormPanel() = default;
+    ~MainFormPanel()
+    {
+        ViewThemeSingleton::Instance().EventThemeChanged -= MakeDelegate(this, &MainFormPanel::OnThemeChanged);
+    }
 
     bool Create(nana::window wd, const nana::rectangle& r = {}, bool visible = true)
     {
@@ -88,6 +99,8 @@ public:
         place_.collocate();
         _panel1_place_.collocate();
         _panel2_place_.collocate();
+
+        OnThemeChanged(ViewThemeSingleton::Instance());
     }
 
     void AddTab(std::string title, IUserControl& userControl) override
@@ -119,16 +132,37 @@ public:
 
 protected:
     nana::place place_;
-    nana::tabbar<size_t> TabBar;
+    conv_tabbar TabBar;
     nana::panel<true> _panel1;
     nana::place _panel1_place_;
     nana::panel<true> _panel2;
     nana::place _panel2_place_;
-    nana::label _label1;
-    nana::label ProgressDescriptionLabel;
-    nana::label PercentLabel;
-    nana::progress ProgressBarControl;
-    nana::button ProcessButton;
+    conv_label _label1;
+    conv_label ProgressDescriptionLabel;
+    conv_label PercentLabel;
+    conv_progress ProgressBarControl;
+    conv_button ProcessButton;
+
+    // ===
+
+    void OnThemeChanged(IViewTheme& theme) const
+    {
+        const auto bgColor = theme.Background();
+        this->scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        TabBar.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        _panel1.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        _panel2.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        _label1.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        ProgressDescriptionLabel.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        PercentLabel.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        ProgressBarControl.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+
+        const auto btnBgColor = theme.ButtonBackground();
+        ProcessButton.scheme().background = nana::color(btnBgColor.r, btnBgColor.g, btnBgColor.b, btnBgColor.alpha);
+
+        // Refresh control to apply changes
+        nana::API::refresh_window(*this);
+    }
 
     // ===
 

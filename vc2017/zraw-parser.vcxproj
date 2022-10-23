@@ -222,7 +222,6 @@ xcopy /e /k /h /i /y $(SolutionDir)..\res $(SolutionDir)..\build\res\</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\AboutTabUserControl.hpp" />
-    <ClInclude Include="..\src\AboutTabLogo.hpp" />
     <ClInclude Include="..\src\BatchConversionListPresenter.hpp" />
     <ClInclude Include="..\src\BatchConversionListUserControl.hpp" />
     <ClInclude Include="..\src\byteswap.hpp" />
@@ -247,7 +246,16 @@ xcopy /e /k /h /i /y $(SolutionDir)..\res $(SolutionDir)..\build\res\</Command>
     <ClInclude Include="..\src\MainForm.hpp" />
     <ClInclude Include="..\src\MainFormPanel.hpp" />
     <ClInclude Include="..\src\MovAvInfoDetect.hpp" />
+    <ClInclude Include="..\src\theme\conv_button.hpp" />
+    <ClInclude Include="..\src\theme\conv_common.hpp" />
+    <ClInclude Include="..\src\theme\conv_form.hpp" />
+    <ClInclude Include="..\src\theme\conv_label.hpp" />
+    <ClInclude Include="..\src\theme\conv_listbox.hpp" />
+    <ClInclude Include="..\src\theme\conv_progress.hpp" />
+    <ClInclude Include="..\src\theme\conv_tabbar.hpp" />
+    <ClInclude Include="..\src\theme\conv_textbox.hpp" />
     <ClInclude Include="..\src\Version.hpp" />
+    <ClInclude Include="..\src\ViewThemeSingleton.hpp" />
     <ClInclude Include="..\src\ZrawConverter.hpp" />
     <ClInclude Include="..\src\ZrawConverterThread.hpp" />
     <ClInclude Include="..\src\ZrawNewExtractor.hpp" />

@@ -13,6 +13,10 @@
 
 #include <IConsoleView.hpp>
 
+#include "theme/conv_common.hpp"
+#include "theme/conv_label.hpp"
+#include "theme/conv_listbox.hpp"
+
 class DebugTabUserControl : public nana::panel<true>, public IConsoleView
 {
     class _console_output_class : public IConsoleOutput
@@ -95,15 +99,23 @@ class DebugTabUserControl : public nana::panel<true>, public IConsoleView
     _console_output_class _console_output_object;
 
 public:
-    DebugTabUserControl() : _console_output_object(_console_output_class(*this)), initialized_(false) {}
+    DebugTabUserControl() : _console_output_object(_console_output_class(*this)), initialized_(false)
+    {
+        ViewThemeSingleton::Instance().EventThemeChanged += MakeDelegate(this, &DebugTabUserControl::OnThemeChanged);
+    }
 
     DebugTabUserControl(nana::window wd, const nana::rectangle& r = {}, bool visible = true)
         : nana::panel<true>(wd, r, visible), _console_output_object(_console_output_class(*this)), initialized_(false)
     {
         this->Create(wd, r, visible);
+
+        ViewThemeSingleton::Instance().EventThemeChanged += MakeDelegate(this, &DebugTabUserControl::OnThemeChanged);
     }
 
-    ~DebugTabUserControl() = default;
+    ~DebugTabUserControl()
+    {
+        ViewThemeSingleton::Instance().EventThemeChanged -= MakeDelegate(this, &DebugTabUserControl::OnThemeChanged);
+    }
 
     bool Create(nana::window wd, const nana::rectangle& r = {}, bool visible = true)
     {
@@ -120,21 +132,18 @@ public:
         if (!initialized_)
         {
             place_.bind(*this);
-            place_.div("margin=[5,5,5,5] <vert margin=[5,5,5,5] gap=2 arrange=[10,variable,25] _field1>");
-            // _panel1
-            _panel1.create(*this);
-            _panel1.transparent(true);
-            place_["_field1"] << _panel1;
+            place_.div("margin=[5,5,5,5] <vert margin=[5,5,5,5] gap=2 arrange=[variable,25] _field1>");
             // _panel2
             _panel2.create(*this);
             _panel2_place_.bind(_panel2);
-            _panel2_place_.div("margin=[5,5,5,5] gap=2 _field_");
+            _panel2_place_.div("margin=[0,0,0,0] gap=2 _field_");
             _panel2.transparent(true);
             place_["_field1"] << _panel2;
             // ConsoleBox
             ConsoleBox.create(_panel2);
             ConsoleBox.append_header("Time (seconds)", 120);
             ConsoleBox.append_header("Message", 550 - 120);
+            ConsoleBox.typeface({ FONT_SIZE, FONT });
             _panel2_place_["_field_"] << ConsoleBox;
             // _panel3
             _panel3.create(*this);
@@ -145,13 +154,13 @@ public:
             // _statusHeaderLabel
             _statusHeaderLabel.create(_panel3);
             _panel3_place_["_field2"] << _statusHeaderLabel;
-            _statusHeaderLabel.caption("Status:");
+            //_statusHeaderLabel.caption("Status:");
             _statusHeaderLabel.transparent(true);
             // StatusLabel
             StatusLabel.create(_panel3);
             _panel3_place_["_field2"] << StatusLabel;
             StatusLabel.typeface(nana::paint::font("", 9, { 400, true, false, false }));
-            StatusLabel.caption("STATUS_LABEL");
+            //StatusLabel.caption("STATUS_LABEL");
             StatusLabel.transparent(true);
 
             initialized_ = true;
@@ -160,6 +169,8 @@ public:
         place_.collocate();
         _panel2_place_.collocate();
         _panel3_place_.collocate();
+
+        OnThemeChanged(ViewThemeSingleton::Instance());
     }
 
     IConsoleOutput& Console() override
@@ -171,14 +182,33 @@ public:
 
 protected:
     nana::place place_;
-    nana::panel<true> _panel1;
     nana::panel<true> _panel2;
     nana::place _panel2_place_;
-    nana::listbox ConsoleBox;
+    conv_listbox ConsoleBox;
     nana::panel<true> _panel3;
     nana::place _panel3_place_;
-    nana::label _statusHeaderLabel;
-    nana::label StatusLabel;
+    conv_label _statusHeaderLabel;
+    conv_label StatusLabel;
+
+    // ===
+
+    void OnThemeChanged(IViewTheme& theme) const
+    {
+        const auto bgColor = theme.Background();
+        this->scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        _panel2.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        //ConsoleBox.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        _panel3.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        _statusHeaderLabel.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        StatusLabel.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+
+        const auto textColor = theme.TextStandard();
+        _statusHeaderLabel.scheme().foreground = nana::color(textColor.r, textColor.g, textColor.b, textColor.alpha);
+        StatusLabel.scheme().foreground = nana::color(textColor.r, textColor.g, textColor.b, textColor.alpha);
+
+        // Refresh control to apply changes
+        nana::API::refresh_window(*this);
+    }
 
     // ===
 

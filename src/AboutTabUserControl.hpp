@@ -11,37 +11,54 @@
 
 #endif
 
+#include "theme/conv_button.hpp"
+#include "theme/conv_label.hpp"
+
 #include "IUserControl.hpp"
 #include "Version.hpp"
-#include "AboutTabLogo.hpp"
+
+#include "ViewThemeSingleton.hpp"
 
 class AboutTabUserControl : public nana::panel<true>, public IUserControl
 {
 public:
-    AboutTabUserControl() : initialized_(false) {}
-
-    AboutTabUserControl(nana::window wd, const nana::rectangle& r = {}, bool visible = true)
-        : nana::panel<true>(wd, r, visible), initialized_(false)
+    AboutTabUserControl() : initialized_(false)
     {
-        this->create(wd, r, visible);
+        ViewThemeSingleton::Instance().EventThemeChanged += MakeDelegate(this, &AboutTabUserControl::OnThemeChanged);
     }
 
     ~AboutTabUserControl()
     {
+        ViewThemeSingleton::Instance().EventThemeChanged -= MakeDelegate(this, &AboutTabUserControl::OnThemeChanged);
+
         delete drawing_;
     }
 
-    bool create(nana::window wd, const nana::rectangle& r = {}, bool visible = true)
-    {
-        if(!nana::panel<true>::create(wd, r, visible))
-            return false;
-
-        Init();
-
-        return true;
-    }
-
 private:
+
+    void OnThemeChanged(IViewTheme& theme) const
+    {
+        const auto bgColor = theme.Background();
+        this->scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        panel1.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        panel2.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        panel3.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        panel31.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        panel311.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        panel21.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        panel4.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        panel5.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        panel6.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        picture1.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        label1.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        label4.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+
+        const auto btnBgColor = theme.ButtonBackground();
+        //linkButton_.scheme().background = nana::color(btnBgColor.r, btnBgColor.g, btnBgColor.b, btnBgColor.alpha);
+
+        // Refresh control to apply changes
+        nana::API::refresh_window(*this);
+    }
 
     void Init() override
     {
@@ -55,6 +72,7 @@ private:
             // panel1
             panel1.create(*this);
             place_["field1"] << panel1;
+
             // panel2
             panel2.create(*this);
             panel2_place_.bind(panel2);
@@ -75,7 +93,8 @@ private:
             // picture1
             picture1.create(panel31);
             panel31_place_["_field_"] << picture1;
-            img_.open(about_logo_bmp_v.data(), about_logo_bmp_v.size());
+            //img_.open(about_logo_bmp_v.data(), about_logo_bmp_v.size());
+            img_.open(ABOUT_LOGO);
             picture1.load(img_);
             picture1.align(static_cast<nana::align>(0), static_cast<nana::align_v>(0));
             picture1.stretchable(true);
@@ -113,7 +132,7 @@ private:
             // textbox1
             label4.create(panel4);
             panel4_place_["field4"] << label4;
-            label4.typeface(nana::paint::font("", 9, { 1000, false, false, false }));
+            //label4.typeface(nana::paint::font("", 9, { 1000, false, false, false }));
             label4.caption("ZRAW Video Converter is a free, open-source solution that allows raw data extraction from ZRAW video files. If you like it, please consider contributing to my open-source development efforts with a donation.");
             label4.text_align(static_cast<nana::align>(1), static_cast<nana::align_v>(1));
             // panel6
@@ -137,6 +156,7 @@ private:
             drawing_ = new nana::drawing(panel31);
             drawing_->draw([&](nana::paint::graphics& graph)
             {
+                /*
                 unsigned int w = picture1.size().width + 4;
                 unsigned int h = picture1.size().height + 4;
 
@@ -150,6 +170,7 @@ private:
 
                 graph.line(nana::point(w - 2, h - 2), nana::point(2, h - 2), nana::color(209, 208, 204));
                 graph.line(nana::point(w - 2, h - 2), nana::point(w - 2, 2), nana::color(209, 208, 204));
+                */
             });
 
             initialized_ = true;
@@ -161,6 +182,8 @@ private:
         panel31_place_.collocate();
         panel21_place_.collocate();
         panel4_place_.collocate();
+
+        OnThemeChanged(ViewThemeSingleton::Instance());
     }
 
 protected:
@@ -175,13 +198,13 @@ protected:
     nana::panel<true> panel311;
     nana::panel<true> panel21;
     nana::place panel21_place_;
-    nana::label label1;
+    conv_label label1;
     nana::panel<true> panel4;
     nana::place panel4_place_;
     nana::panel<true> panel5;
-    nana::label label4;
+    conv_label label4;
     nana::panel<true> panel6;
-    nana::button linkButton_;
+    conv_button linkButton_;
 
     nana::drawing* drawing_;
 

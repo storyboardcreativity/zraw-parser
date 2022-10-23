@@ -6,28 +6,44 @@
 
 #include <IFormView.hpp>
 
+#include "ViewThemeSingleton.hpp"
 
-class MainForm
-    : public nana::form, public IFormView
+#include "theme/conv_form.hpp"
+
+class MainForm : public conv_form, public IFormView
 {
 public:
-    MainForm() : nana::form(nana::API::make_center(640, 480),
-        nana::appearance{true, true, false, false, false, false, false}),
-        current_user_control_(nullptr)
+    MainForm() : current_user_control_(nullptr)
     {
         _init();
+
+        ViewThemeSingleton::Instance().EventThemeChanged += MakeDelegate(this, &MainForm::OnThemeChanged);
     }
 
-    ~MainForm() = default;
+    ~MainForm()
+    {
+        ViewThemeSingleton::Instance().EventThemeChanged -= MakeDelegate(this, &MainForm::OnThemeChanged);
+    }
 
 protected:
     void _init()
     {
         place_.bind(*this);
-        place_.div("margin=[5,5,5,5] gap=2 _field_");
-        caption("ZRAW Video Converter");
+        place_.div("margin=[42,2,2,2] gap=2 _field_");
+        setTitle("ZRAW Video Converter");
 
         place_.collocate();
+
+        OnThemeChanged(ViewThemeSingleton::Instance());
+    }
+
+    void OnThemeChanged(IViewTheme& theme) const
+    {
+        const auto bgColor = theme.Background();
+        this->scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+
+        // Refresh control to apply changes
+        nana::API::refresh_window(*this);
     }
 
 public:

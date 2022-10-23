@@ -10,6 +10,12 @@
 
 #include <IFileSelectionView.hpp>
 
+#include "theme/conv_button.hpp"
+#include "theme/conv_label.hpp"
+#include "theme/conv_textbox.hpp"
+
+#include "ViewThemeSingleton.hpp"
+
 class FileSelectionUserControl : public nana::panel<true>, public IFileSelectionView
 {
 public:
@@ -19,9 +25,14 @@ public:
         : nana::panel<true>(wd, r, visible), initialized_(false)
     {
         this->Create(wd, r, visible);
+
+        ViewThemeSingleton::Instance().EventThemeChanged += MakeDelegate(this, &FileSelectionUserControl::OnThemeChanged);
     }
 
-    ~FileSelectionUserControl() = default;
+    ~FileSelectionUserControl()
+    {
+        ViewThemeSingleton::Instance().EventThemeChanged -= MakeDelegate(this, &FileSelectionUserControl::OnThemeChanged);
+    }
 
     bool Create(nana::window wd, const nana::rectangle& r = {}, bool visible = true)
     {
@@ -52,7 +63,8 @@ public:
             panel2_place_["field2"] << panel3;
             // group1
             group1.create(panel2);
-            group1.caption("In/Out settings");
+            group1.caption("<bold=true, color=0xF1F1F1>In/Out settings</>");
+            group1.enable_format_caption(true);
             group1.div("gap=2 _field_");
             panel2_place_["field2"] << group1;
             // panel32
@@ -78,6 +90,7 @@ public:
             OutputPathTextBox.create(panel5);
             panel5_place_["field5"] << OutputPathTextBox;
             OutputPathTextBox.multi_lines(false);
+            OutputPathTextBox.tip_string("enter path to the output folder or choose it by clicking a button");
             OutputPathTextBox.events().key_release([&](const nana::arg_keyboard& arg)
             {
                 if (arg.key == nana::keyboard::enter)
@@ -120,6 +133,7 @@ public:
             panel6_place_["_field_"] << label3;
             label3.transparent(true);
             label3.caption("EMPTY");
+            label3.typeface({ FONT_SIZE, FONT });
             label3.typeface(nana::paint::font("", 9, { 1000, false, false, false }));
             // panel31
             panel31.create(panel2);
@@ -136,6 +150,8 @@ public:
         group1.collocate();
         panel32_place_.collocate();
         panel5_place_.collocate();
+
+        OnThemeChanged(ViewThemeSingleton::Instance());
     }
 
     void SetSelectedOutputPathFieldText(std::string path) override
@@ -147,7 +163,10 @@ public:
     void SetStatusText(std::string text, bool isOk) override
     {
         label3.caption(text);
-        label3.fgcolor(nana::color(isOk ? 0 : 100, isOk ? 100 : 0, 0));
+        if (isOk)
+            label3.fgcolor(COLOR9_NANA);
+        else
+            label3.fgcolor(COLOR8_NANA);
     }
 
     void SetActivity(bool isActive) override
@@ -167,15 +186,47 @@ protected:
     nana::place panel32_place_;
     nana::panel<true> panel5;
     nana::place panel5_place_;
-    nana::label label11;
-    nana::textbox OutputPathTextBox;
-    nana::button SelectOutputPathButton;
+    conv_label label11;
+    conv_textbox OutputPathTextBox;
+    conv_button SelectOutputPathButton;
     nana::panel<true> panel6;
     nana::place panel6_place_;
-    nana::label label2;
-    nana::label label3;
+    conv_label label2;
+    conv_label label3;
     nana::panel<true> panel31;
     nana::panel<true> panel21;
+
+    // ===
+
+    void OnThemeChanged(IViewTheme& theme) const
+    {
+        const auto bgColor = theme.Background();
+        this->scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        panel1.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        panel2.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        panel3.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        group1.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        panel32.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        panel5.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        label11.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        OutputPathTextBox.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        panel6.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        label2.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        label3.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        panel31.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        panel21.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+
+        const auto textColor = theme.TextStandard();
+        label11.scheme().foreground = nana::color(textColor.r, textColor.g, textColor.b, textColor.alpha);
+        label2.scheme().foreground = nana::color(textColor.r, textColor.g, textColor.b, textColor.alpha);
+        label3.scheme().foreground = nana::color(textColor.r, textColor.g, textColor.b, textColor.alpha);
+
+        const auto btnBgColor = theme.ButtonBackground();
+        SelectOutputPathButton.scheme().background = nana::color(btnBgColor.r, btnBgColor.g, btnBgColor.b, btnBgColor.alpha);
+
+        // Refresh control to apply changes
+        nana::API::refresh_window(*this);
+    }
 
     // ===
 
