@@ -144,6 +144,7 @@ public:
             ConsoleBox.append_header("Time (seconds)", 120);
             ConsoleBox.append_header("Message", 550 - 120);
             ConsoleBox.typeface({ FONT_SIZE, FONT });
+            ConsoleBox.scheme().cat_fgcolor = COLOR12_NANA;
             _panel2_place_["_field_"] << ConsoleBox;
             // _panel3
             _panel3.create(*this);

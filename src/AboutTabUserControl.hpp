@@ -4,6 +4,7 @@
 #include <nana/gui/place.hpp>
 #include <nana/gui/widgets/picture.hpp>
 #include <nana/gui/widgets/label.hpp>
+#include <nana/system/dataexch.hpp>
 
 #ifdef _MSC_VER
 #include <Windows.h>
@@ -107,19 +108,13 @@ private:
             panel21_place_.bind(panel21);
 
             // 30 is a bold title vertical size
-            panel21_place_.div("vert margin=[0,0,0,0] <vert margin=[0,0,0,0] gap=2 arrange=[30,variable] field3><margin=[30,150,30,150] btn_place>");
+            panel21_place_.div("vert margin=[0,0,0,0] <vert margin=[0,0,0,0] gap=2 arrange=[30,variable] field3><margin=[0,0,0,0] btn_place>");
 
             place_["field1"] << panel21;
             // label1
             label1.create(panel21);
             panel21_place_["field3"] << label1;
-#ifdef _WIN32
-            label1.caption(std::string("ZRAW Video Converter for Windows v") + std::string(ZRAW_PARSER_VERSION_STRING) + "\nby Zaripov R.");
-#elif __linux__
-            label1.caption(std::string("ZRAW Video Converter for Linux v") + std::string(ZRAW_PARSER_VERSION_STRING) + "\nby Zaripov R.");
-#else
-            label1.caption(std::string("ZRAW Video Converter v") + std::string(ZRAW_PARSER_VERSION_STRING) + "\nby Zaripov R.");
-#endif
+            label1.caption(std::string("ZRAW Video Converter v") + std::string(ZRAW_PARSER_VERSION_STRING) + " by Zaripov R.");
             label1.text_align(static_cast<nana::align>(1), static_cast<nana::align_v>(1));
             // panel4
             panel4.create(panel21);
@@ -133,45 +128,31 @@ private:
             label4.create(panel4);
             panel4_place_["field4"] << label4;
             //label4.typeface(nana::paint::font("", 9, { 1000, false, false, false }));
-            label4.caption("ZRAW Video Converter is a free, open-source solution that allows raw data extraction from ZRAW video files. If you like it, please consider contributing to my open-source development efforts with a donation.");
+            label4.caption("ZRAW Video Converter is a free, open-source solution that allows raw data extraction from ZRAW video files.\nIf you like it, please consider contributing to my open-source development efforts with a donation.");
             label4.text_align(static_cast<nana::align>(1), static_cast<nana::align_v>(1));
             // panel6
             panel6.create(panel4);
             panel4_place_["field4"] << panel6;
-            // label3
-            linkButton_.create(panel21);
-            panel21_place_["btn_place"] << linkButton_;
-            linkButton_.caption("Click here to support ZRAW tools development");
-            linkButton_.events().click([]()
-            {
-#ifdef _MSC_VER
-                ShellExecute(NULL, L"open", L"https://ko-fi.com/storyboardcreativity", NULL, NULL, SW_SHOWNORMAL);
-#elif __linux__
-                system("xdg-open https://ko-fi.com/storyboardcreativity");
-#else
-#error Unknown OS!
-#endif
-            });
 
             drawing_ = new nana::drawing(panel31);
             drawing_->draw([&](nana::paint::graphics& graph)
             {
-                /*
                 unsigned int w = picture1.size().width + 4;
                 unsigned int h = picture1.size().height + 4;
 
-                graph.rectangle(nana::rectangle{0, 0, w, h}, true, nana::color(255, 254, 250));
+                //graph.rectangle(nana::rectangle{0, 0, w, h}, true, nana::color(255, 254, 250));
 
-                graph.line(nana::point(1, 1), nana::point(w - 2, 1), nana::color(116, 116, 116));
-                graph.line(nana::point(1, 1), nana::point(1, h - 2), nana::color(116, 116, 116));
+                //graph.line(nana::point(1, 1), nana::point(w - 2, 1), nana::color(116, 116, 116));
+                //graph.line(nana::point(1, 1), nana::point(1, h - 2), nana::color(116, 116, 116));
 
-                graph.line(nana::point(0, 0), nana::point(w, 0), nana::color(166, 166, 166));
-                graph.line(nana::point(0, 0), nana::point(0, h), nana::color(166, 166, 166));
+                //graph.line(nana::point(0, 0), nana::point(w, 0), nana::color(166, 166, 166));
+                //graph.line(nana::point(0, 0), nana::point(0, h), nana::color(166, 166, 166));
 
-                graph.line(nana::point(w - 2, h - 2), nana::point(2, h - 2), nana::color(209, 208, 204));
-                graph.line(nana::point(w - 2, h - 2), nana::point(w - 2, 2), nana::color(209, 208, 204));
-                */
+                graph.line(nana::point(w - 2, h - 2), nana::point(2, h - 2), COLOR2_NANA);
+                //graph.line(nana::point(w - 2, h - 2), nana::point(w - 2, 2), nana::color(209, 208, 204));
             });
+
+            _initButtonsPanel(panel21, panel21_place_);
 
             initialized_ = true;
         }
@@ -184,6 +165,59 @@ private:
         panel4_place_.collocate();
 
         OnThemeChanged(ViewThemeSingleton::Instance());
+    }
+
+#define _BTC_ADDRESS "bc1q6pxsepxekzhfecuw0wshmwx4wqwdnlppefwvff"
+#define _ETH_ADDRESS "0x90261E953c1E5Bfd6C54A0a725172b156dDeFBD3"
+#define _MIR_ADDRESS "2200 1502 3712 4620"
+
+    void _initButtonsPanel(nana::panel<true>& parent, nana::place& place)
+    {
+        // Create panel
+        _buttons_panel.create(parent);
+        place["btn_place"] << _buttons_panel;
+
+        // Attach field to panel
+        _buttons_place.bind(_buttons_panel);
+        _buttons_place.div("<vert margin=[0,100,0,100] btn_field>");
+
+        _btn_btc.create(_buttons_panel);
+        _buttons_place["btn_field"] << _btn_btc;
+        _btn_btc.caption(std::string("BTC: ") + _BTC_ADDRESS);
+        _btn_btc.events().click([&]()
+        {
+            nana::system::dataexch().set(_BTC_ADDRESS, api::root(*this));
+
+            _btn_btc.caption(std::string("BTC: ") + _BTC_ADDRESS + " (copied to clipboard)");
+            _btn_eth.caption(std::string("ETH: ") + _ETH_ADDRESS);
+            _btn_mir.caption(std::string("MIR: ") + _MIR_ADDRESS);
+        });
+
+        _btn_eth.create(_buttons_panel);
+        _buttons_place["btn_field"] << _btn_eth;
+        _btn_eth.caption(std::string("ETH: ") + _ETH_ADDRESS);
+        _btn_eth.events().click([&]()
+        {
+            nana::system::dataexch().set(_ETH_ADDRESS, api::root(*this));
+
+            _btn_btc.caption(std::string("BTC: ") + _BTC_ADDRESS);
+            _btn_eth.caption(std::string("ETH: ") + _ETH_ADDRESS + " (copied to clipboard)");
+            _btn_mir.caption(std::string("MIR: ") + _MIR_ADDRESS);
+        });
+        
+        _btn_mir.create(_buttons_panel);
+        _buttons_place["btn_field"] << _btn_mir;
+        _btn_mir.caption(std::string("MIR: ") + _MIR_ADDRESS);
+        _btn_mir.events().click([&]()
+        {
+            nana::system::dataexch().set(_MIR_ADDRESS, api::root(*this));
+
+            _btn_btc.caption(std::string("BTC: ") + _BTC_ADDRESS);
+            _btn_eth.caption(std::string("ETH: ") + _ETH_ADDRESS);
+            _btn_mir.caption(std::string("MIR: ") + _MIR_ADDRESS + " (copied to clipboard)");
+        });
+
+        _buttons_place.collocate();
     }
 
 protected:
@@ -204,7 +238,16 @@ protected:
     nana::panel<true> panel5;
     conv_label label4;
     nana::panel<true> panel6;
-    conv_button linkButton_;
+    //conv_button linkButton_;
+    conv_textbox _support_textbox;
+
+    nana::panel<true> _buttons_panel;
+    nana::place _buttons_place;
+
+    // buttons
+    conv_button _btn_btc;
+    conv_button _btn_eth;
+    conv_button _btn_mir;
 
     nana::drawing* drawing_;
 

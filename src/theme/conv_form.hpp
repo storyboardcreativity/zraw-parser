@@ -63,6 +63,7 @@ public:
         dragBar.fgcolor(COLOR6_NANA);
         dragBar.events().mouse_enter([&](const arg_mouse& mp) {conv_form::OnMouseEnter(mp); });
         dragBar.events().mouse_leave([&](const arg_mouse& mp) {conv_form::OnMouseLeave(mp); });
+        dragBar.events().dbl_click([&](const arg_mouse& mp) {conv_form::maximizeGadgetOnClicked(); });
 
         // minimizeGadget
         minimizeGadget.create(*this, rectangle(w - BUTTON_SZ_X * 3 - 1, 1, BUTTON_SZ_X, BUTTON_SZ_Y));
@@ -102,6 +103,7 @@ public:
         _pic.create(*this, rectangle(4, 4, WINDOW_MAIN_PIC_SIZE_X, WINDOW_MAIN_PIC_SIZE_Y));
         _pic.load(paint::image(FORM_ICON));
         _pic.stretchable(true);
+        _pic.events().dbl_click([&](const arg_mouse& mp) {conv_form::maximizeGadgetOnClicked(); });
 
         // paint
         OnPaint();

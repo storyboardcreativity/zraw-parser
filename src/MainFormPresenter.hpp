@@ -1,5 +1,7 @@
 #pragma once
 
+#include <thread>
+
 #include <MainForm.hpp>
 #include <MainFormPanel.hpp>
 #include <MainFormPresenter.hpp>
@@ -40,6 +42,11 @@ public:
             std::make_unique<BatchConversionListPresenter>(_model, *_bcluc, _debugView->Console()),
             *_mainPanel,
             _debugView->Console());
+        
+        _debugView->Console().printf("--------------------------------------");
+        _debugView->Console().printf("ZRAW Video Converter v%s started!", ZRAW_PARSER_VERSION_STRING);
+        _debugView->Console().printf("Threads available: %d", std::thread::hardware_concurrency());
+        _debugView->Console().printf("--------------------------------------");
     }
 
     void Run() const
