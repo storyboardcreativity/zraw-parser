@@ -143,7 +143,7 @@ public:
             ConsoleBox.create(_panel2);
             ConsoleBox.append_header("Time (seconds)", 120);
             ConsoleBox.append_header("Message", 550 - 120);
-            ConsoleBox.typeface({ FONT_SIZE, FONT });
+            ConsoleBox.typeface(nana::paint::font{ FONT0_NAME, FONT0_SIZE });
             ConsoleBox.scheme().cat_fgcolor = COLOR12_NANA;
             _panel2_place_["_field_"] << ConsoleBox;
             // _panel3

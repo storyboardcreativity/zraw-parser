@@ -9,9 +9,13 @@
 class conv_label : public nana::label
 {
 public:
-    conv_label() : label(), f{ FONT_SIZE, FONT } {}
+    conv_label() : label(), f{ FONT_NAME, FONT_SIZE } {}
 
-    void setFont(nana::paint::font &ft) { f = ft; }
+    void setFont(nana::paint::font &ft)
+    {
+        f = ft;
+        typeface(f);
+    }
 private:
     nana::paint::font f;
     void Set()

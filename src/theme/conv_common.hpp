@@ -1,19 +1,34 @@
 #pragma once
 
+#include "Resource.hpp"
+
 // color palette
 #define LIGHT        nana::color(138, 138, 138)
 #define WHITE        nana::color(255, 255, 255)
 #define BLACK        nana::color(0, 0, 0)
 #define HIGHLIGHT    nana::color(186, 186, 186)
+
 // font
-#define FONT        "F:\\C\\TEST_SSD\\git\\zraw-parser\\res\\MuktaVaani-Light.ttf"
+
 #define FONT_SIZE    9
+#define FONT_NAME                "Segoe UI"
+
+#define FONT0_SIZE   9
+#define FONT0_NAME               "Consolas"
+
 // button image
-#define CONV_BUTTONS_IMG    "F:\\C\\TEST_SSD\\git\\zraw-parser\\res\\vsbuttons.bmp"
+
+Resource g_res_vsbuttons(IDR_BINARY7, L"BINARY");
+
 // icon
-#define FORM_ICON    "F:\\C\\TEST_SSD\\git\\zraw-parser\\res\\icon.bmp"
+
+Resource g_res_icon(IDR_BINARY6, L"BINARY");
+
 // logo
-#define ABOUT_LOGO    "F:\\C\\TEST_SSD\\git\\zraw-parser\\res\\about_logo.bmp"
+
+Resource g_res_about_logo(IDR_BINARY5, L"BINARY");
+
+//
 
 #define COLOR0        {45, 45, 48, 1}            // Facade background
 #define COLOR0_NANA    nana::color(45, 45, 48, 1)

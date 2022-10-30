@@ -8,7 +8,7 @@
 class conv_listbox : public nana::listbox
 {
 public:
-    conv_listbox() : f{ FONT_SIZE, FONT } {}
+    conv_listbox() : f{ FONT_NAME, FONT_SIZE } {}
 
     void setFont(nana::paint::font &ft) { f = ft; }
 private:

@@ -9,7 +9,7 @@
 class conv_textbox : public nana::panel<true>
 {
 public:
-    conv_textbox() : panel<true>(), f{ FONT_SIZE, FONT } {}
+    conv_textbox() : panel<true>(), f{ FONT_NAME, FONT_SIZE } {}
 
     void setFont(nana::paint::font &ft) { f = ft; }
     std::string caption()

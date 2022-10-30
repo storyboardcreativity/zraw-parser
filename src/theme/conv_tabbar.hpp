@@ -9,7 +9,7 @@
 class conv_tabbar : public nana::tabbar<size_t>
 {
 public:
-    conv_tabbar() : tabbar(), f{ FONT_SIZE, FONT } {}
+    conv_tabbar() : tabbar(), f{ FONT_NAME, FONT_SIZE } {}
 
     void setFont(nana::paint::font &ft) { f = ft; }
 private:

@@ -133,7 +133,7 @@ public:
             panel6_place_["_field_"] << label3;
             label3.transparent(true);
             label3.caption("EMPTY");
-            label3.typeface({ FONT_SIZE, FONT });
+            label3.typeface(nana::paint::font{ FONT_NAME, FONT_SIZE });
             label3.typeface(nana::paint::font("", 9, { 1000, false, false, false }));
             // panel31
             panel31.create(panel2);

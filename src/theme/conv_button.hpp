@@ -10,9 +10,9 @@ using namespace nana;
 class conv_button : public button
 {
 public:
-    conv_button() : button(), f{ FONT_SIZE, FONT } {}
+    conv_button() : button(), f{ FONT_NAME, FONT_SIZE } {}
 
-    conv_button(nana::window& af, std::string text, const rectangle& r) : button(af, r), f{ FONT_SIZE, FONT }
+    conv_button(nana::window& af, std::string text, const rectangle& r) : button(af, r), f{ FONT_NAME, FONT_SIZE }
     {
         caption(text);
         Set();

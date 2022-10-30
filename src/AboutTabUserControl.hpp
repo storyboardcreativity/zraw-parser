@@ -94,8 +94,8 @@ private:
             // picture1
             picture1.create(panel31);
             panel31_place_["_field_"] << picture1;
-            //img_.open(about_logo_bmp_v.data(), about_logo_bmp_v.size());
-            img_.open(ABOUT_LOGO);
+            auto logo_data = g_res_about_logo.Data();
+            img_.open(logo_data.ptr, logo_data.size_bytes);
             picture1.load(img_);
             picture1.align(static_cast<nana::align>(0), static_cast<nana::align_v>(0));
             picture1.stretchable(true);
@@ -114,7 +114,10 @@ private:
             // label1
             label1.create(panel21);
             panel21_place_["field3"] << label1;
-            label1.caption(std::string("ZRAW Video Converter v") + std::string(ZRAW_PARSER_VERSION_STRING) + " by Zaripov R.");
+            nana::paint::font fnt = { FONT_NAME, FONT_SIZE };
+            label1.setFont(fnt);
+            label1.caption(std::string("<bold=true>ZRAW Video Converter v") + std::string(ZRAW_PARSER_VERSION_STRING) + " by Zaripov R.</>");
+            label1.format(true);
             label1.text_align(static_cast<nana::align>(1), static_cast<nana::align_v>(1));
             // panel4
             panel4.create(panel21);
@@ -140,16 +143,7 @@ private:
                 unsigned int w = picture1.size().width + 4;
                 unsigned int h = picture1.size().height + 4;
 
-                //graph.rectangle(nana::rectangle{0, 0, w, h}, true, nana::color(255, 254, 250));
-
-                //graph.line(nana::point(1, 1), nana::point(w - 2, 1), nana::color(116, 116, 116));
-                //graph.line(nana::point(1, 1), nana::point(1, h - 2), nana::color(116, 116, 116));
-
-                //graph.line(nana::point(0, 0), nana::point(w, 0), nana::color(166, 166, 166));
-                //graph.line(nana::point(0, 0), nana::point(0, h), nana::color(166, 166, 166));
-
                 graph.line(nana::point(w - 2, h - 2), nana::point(2, h - 2), COLOR2_NANA);
-                //graph.line(nana::point(w - 2, h - 2), nana::point(w - 2, 2), nana::color(209, 208, 204));
             });
 
             _initButtonsPanel(panel21, panel21_place_);

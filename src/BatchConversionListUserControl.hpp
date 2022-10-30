@@ -206,7 +206,7 @@ private:
         _listboxAddedFiles.append_header("Type", 120);
         _listboxAddedFiles.append_header("File Path", 550 - 240);
 
-        _listboxAddedFiles.typeface({ FONT_SIZE, FONT });
+        _listboxAddedFiles.typeface(nana::paint::font{ FONT_NAME, FONT_SIZE });
 
         _listboxAddedFiles.at(0).inline_factory(BATCH_CONVERSION_LIST_USER_CONTROL__COL_NUM__PROGRESS, nana::pat::make_factory<InlineProgressBarWidget>());
     }

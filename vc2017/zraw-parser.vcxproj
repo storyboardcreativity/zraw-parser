@@ -246,6 +246,7 @@ xcopy /e /k /h /i /y $(SolutionDir)..\res $(SolutionDir)..\build\res\</Command>
     <ClInclude Include="..\src\MainForm.hpp" />
     <ClInclude Include="..\src\MainFormPanel.hpp" />
     <ClInclude Include="..\src\MovAvInfoDetect.hpp" />
+    <ClInclude Include="..\src\Resource.hpp" />
     <ClInclude Include="..\src\theme\conv_button.hpp" />
     <ClInclude Include="..\src\theme\conv_common.hpp" />
     <ClInclude Include="..\src\theme\conv_form.hpp" />
@@ -260,6 +261,10 @@ xcopy /e /k /h /i /y $(SolutionDir)..\res $(SolutionDir)..\build\res\</Command>
     <ClInclude Include="..\src\ZrawConverterThread.hpp" />
     <ClInclude Include="..\src\ZrawNewExtractor.hpp" />
     <ClInclude Include="..\src\ZrawProcessingModel.hpp" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

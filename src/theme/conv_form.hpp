@@ -46,7 +46,7 @@ class conv_form : public form
 {
 public:
     conv_form() : form(API::make_center(920, 600), bald0()),//appear::optional<false, appear::sizable, appear::taskbar, appear::floating, appear::minimize>()),
-        f{ FONT_SIZE, FONT }
+        f{ FONT_NAME, FONT_SIZE }
     {
         bgcolor(BLACK);
         typeface(f);
@@ -100,8 +100,12 @@ public:
         events().mouse_enter([&](const arg_mouse& mp) {conv_form::OnMouseEnter(mp); });
         events().mouse_leave([&](const arg_mouse& mp) {conv_form::OnMouseLeave(mp); });
 
+        auto icon_data = g_res_icon.Data();
+        paint::image icon_img;
+        icon_img.open(icon_data.ptr, icon_data.size_bytes);
+
         _pic.create(*this, rectangle(4, 4, WINDOW_MAIN_PIC_SIZE_X, WINDOW_MAIN_PIC_SIZE_Y));
-        _pic.load(paint::image(FORM_ICON));
+        _pic.load(icon_img);
         _pic.stretchable(true);
         _pic.events().dbl_click([&](const arg_mouse& mp) {conv_form::maximizeGadgetOnClicked(); });
 
@@ -215,7 +219,12 @@ private:
         bg.join(element_state::normal, element_state::focus_normal);
         bg.join(element_state::normal, element_state::focus_hovered);
         bg.join(element_state::normal, element_state::disabled);
-        bg.image(paint::image(CONV_BUTTONS_IMG), true, rectangle{ index * BUTTON_SZ_X, 0, BUTTON_SZ_X, BUTTON_SZ_Y * 3 });
+
+        auto vsbuttons_data = g_res_vsbuttons.Data();
+        paint::image img;
+        img.open(vsbuttons_data.ptr, vsbuttons_data.size_bytes);
+
+        bg.image(img, true, rectangle{ index * BUTTON_SZ_X, 0, BUTTON_SZ_X, BUTTON_SZ_Y * 3 });
         return bg;
     }
     bool is_zoomed;

@@ -53,7 +53,7 @@ public:
             InfoListBox.create(*this);
             InfoListBox.append_header("Property", 120);
             InfoListBox.append_header("Info", 550 - 120);
-            InfoListBox.typeface({ FONT_SIZE, FONT });
+            InfoListBox.typeface(nana::paint::font{ FONT_NAME, FONT_SIZE });
             InfoListBox.fgcolor(COLOR1_NANA);
             InfoListBox.scheme().cat_fgcolor = COLOR12_NANA;
             place_["_field1"] << InfoListBox;
