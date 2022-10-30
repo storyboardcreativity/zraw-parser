@@ -6,19 +6,29 @@
 
 #include <IInputFileInfoView.hpp>
 
+#include "theme/conv_common.hpp"
+#include "theme/conv_listbox.hpp"
 
 class InputFileInfoUserControl : public nana::panel<true>, public IInputFileInfoView
 {
 public:
-    InputFileInfoUserControl() : initialized_(false) {}
+    InputFileInfoUserControl() : initialized_(false)
+    {
+        ViewThemeSingleton::Instance().EventThemeChanged += MakeDelegate(this, &InputFileInfoUserControl::OnThemeChanged);
+    }
 
     InputFileInfoUserControl(nana::window wd, const nana::rectangle& r = {}, bool visible = true)
         : nana::panel<true>(wd, r, visible), initialized_(false)
     {
         this->Create(wd, r, visible);
+
+        ViewThemeSingleton::Instance().EventThemeChanged += MakeDelegate(this, &InputFileInfoUserControl::OnThemeChanged);
     }
 
-    ~InputFileInfoUserControl() = default;
+    ~InputFileInfoUserControl()
+    {
+        ViewThemeSingleton::Instance().EventThemeChanged -= MakeDelegate(this, &InputFileInfoUserControl::OnThemeChanged);
+    }
 
     bool Create(nana::window wd, const nana::rectangle& r = {}, bool visible = true)
     {
@@ -35,14 +45,17 @@ public:
         if (!initialized_)
         {
             place_.bind(*this);
-            place_.div("margin=[5,5,5,5] <vert margin=[5,5,5,5] gap=2 arrange=[20,variable,10] _field1>");
+            place_.div("margin=[5,5,5,5] <vert margin=[5,5,5,5] gap=2 arrange=[variable,10] _field1>");
             // _panel1
-            _panel1.create(*this);
-            place_["_field1"] << _panel1;
+            //_panel1.create(*this);
+            //place_["_field1"] << _panel1;
             // InfoListBox
             InfoListBox.create(*this);
             InfoListBox.append_header("Property", 120);
             InfoListBox.append_header("Info", 550 - 120);
+            InfoListBox.typeface(nana::paint::font{ FONT_NAME, FONT_SIZE });
+            InfoListBox.fgcolor(COLOR1_NANA);
+            InfoListBox.scheme().cat_fgcolor = COLOR12_NANA;
             place_["_field1"] << InfoListBox;
             // _panel2
             _panel2.create(*this);
@@ -52,6 +65,8 @@ public:
         }
 
         place_.collocate();
+
+        OnThemeChanged(ViewThemeSingleton::Instance());
     }
 
     void Clear() override
@@ -68,8 +83,22 @@ public:
 protected:
     nana::place place_;
     nana::panel<true> _panel1;
-    nana::listbox InfoListBox;
+    conv_listbox InfoListBox;
     nana::panel<true> _panel2;
+
+    // ===
+
+    void OnThemeChanged(IViewTheme& theme) const
+    {
+        const auto bgColor = theme.Background();
+        this->scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        _panel1.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        //InfoListBox.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        _panel2.scheme().background = nana::color(bgColor.r, bgColor.g, bgColor.b, bgColor.alpha);
+        
+        // Refresh control to apply changes
+        nana::API::refresh_window(*this);
+    }
 
     // ===
 

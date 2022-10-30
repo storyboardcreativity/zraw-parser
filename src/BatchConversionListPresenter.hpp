@@ -95,29 +95,46 @@ protected:
         switch (state)
         {
         case ZrawProcessingModel::Unconvertable:
+        {
             _view.ChangeInputFileColor(path, 254, 162, 0, 1.0);
             break;
+        }
 
         case ZrawProcessingModel::InProcess:
-            _view.ChangeInputFileColor(path, 6, 25, 103, 1.0);
+        {
+            uint32_t color[4] = COLOR5;
+            _view.ChangeInputFileColor(path, color[0], color[1], color[2], color[3]);
             break;
+        }
 
         case ZrawProcessingModel::ConversionOk:
-            _view.ChangeInputFileColor(path, 37, 123, 24, 1.0);
+        {
+            uint32_t color[4] = COLOR9;
+            _view.ChangeInputFileColor(path, color[0], color[1], color[2], color[3]);
             break;
+        }
 
         case ZrawProcessingModel::ConversionFailed:
-            _view.ChangeInputFileColor(path, 164, 33, 13, 1.0);
+        {
+            uint32_t color[4] = COLOR8;
+            _view.ChangeInputFileColor(path, color[0], color[1], color[2], color[3]);
             break;
+        }
 
         case ZrawProcessingModel::ConversionInterrupted:
-            _view.ChangeInputFileColor(path, 1, 112, 113, 1.0);
+        {
+            uint32_t color[4] = COLOR2;
+            _view.ChangeInputFileColor(path, color[0], color[1], color[2], color[3]);
             break;
+        }
 
         case ZrawProcessingModel::NotConverted:
         default:
-            _view.ChangeInputFileColor(path, 0, 0, 0, 1.0);
+        {
+            uint32_t color[4] = COLOR7;
+            _view.ChangeInputFileColor(path, color[0], color[1], color[2], color[3]);
             break;
+        }
         }
     }
 
