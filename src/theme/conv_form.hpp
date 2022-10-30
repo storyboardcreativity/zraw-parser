@@ -217,7 +217,7 @@ private:
         element::bground bg;
         bg.states({ element_state::normal, element_state::hovered, element_state::pressed });
         bg.join(element_state::normal, element_state::focus_normal);
-        bg.join(element_state::normal, element_state::focus_hovered);
+        bg.join(element_state::hovered, element_state::focus_hovered);
         bg.join(element_state::normal, element_state::disabled);
 
         auto vsbuttons_data = g_res_vsbuttons.Data();
