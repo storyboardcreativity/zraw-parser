@@ -20,6 +20,8 @@
 #define BATCH_CONVERSION_LIST_USER_CONTROL__COL_NUM__TYPE 2
 #define BATCH_CONVERSION_LIST_USER_CONTROL__COL_NUM__PATH 3
 
+#define BATCH_CONVERSION_LIST_USER_CONTROL__UNSUPPORTED_TYPE_TEXT "Unsupported"
+
 class BatchConversionListUserControl : public nana::panel<true>, public IBatchConversionListView
 {
 public:
@@ -80,7 +82,7 @@ public:
         cat.append({
             fspath.filename().string(),
             "0",
-            (type == "") ? "---" : type,
+            (type == "") ? BATCH_CONVERSION_LIST_USER_CONTROL__UNSUPPORTED_TYPE_TEXT : type,
             fspath.string()
         });
         cat.back().check((type == "") ? false : checked, false);
@@ -150,7 +152,7 @@ private:
         _listboxAddedFiles.events().checked([&](const nana::arg_listbox& args)
         {
             if (args.item.checked() != false)
-                if (args.item.text(BATCH_CONVERSION_LIST_USER_CONTROL__COL_NUM__TYPE) == "---")
+                if (args.item.text(BATCH_CONVERSION_LIST_USER_CONTROL__COL_NUM__TYPE) == BATCH_CONVERSION_LIST_USER_CONTROL__UNSUPPORTED_TYPE_TEXT)
                 {
                     args.item.check(false);
                     return;

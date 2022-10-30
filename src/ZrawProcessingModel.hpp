@@ -434,17 +434,24 @@ protected:
         //auto tracksInfo = MovDetectTracks(path.c_str());
         //info.tracksInfo = tracksInfo;
 
-        TinyMovFileReader reader;
-        auto mov = reader.OpenMovFile(path.c_str());
-        info.mov = mov;
+		try
+		{
+			TinyMovFileReader reader;
+			info.mov = reader.OpenMovFile(path.c_str());
+		}
+		catch (...)
+		{
+			InputFilePathConversionState_set(path, Unconvertable);
+			return false;
+		}
 
         //TRIGGER_EVENT(EventMovContainerLogUpdate, info.output_log);
 
         // Find ZRAW tracks
         int zrawTrackIndex = -1;
-        for (int i = 0; i < mov.Tracks().size(); ++i)
+        for (int i = 0; i < info.mov.Tracks().size(); ++i)
         {
-            auto& track = mov.Tracks()[i];
+            auto& track = info.mov.Tracks()[i];
             if (track.Media().Type() != TinyMovTrackMedia::Type_t::Video)
                 continue;
 

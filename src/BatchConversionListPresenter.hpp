@@ -64,6 +64,8 @@ protected:
 
     void OnInputFilePathsUpdateInModel()
     {
+		_debug_visitor.printf("Updating input paths...");
+
         auto pathsList = _model.InputFilePaths_get();
         for (auto it = pathsList.begin(); it != pathsList.end(); ++it)
         {
@@ -96,12 +98,16 @@ protected:
         {
         case ZrawProcessingModel::Unconvertable:
         {
+			_debug_visitor.printf("Changed file state to [Unconvertable] : %s", path.c_str());
+
             _view.ChangeInputFileColor(path, 254, 162, 0, 1.0);
             break;
         }
 
         case ZrawProcessingModel::InProcess:
         {
+			_debug_visitor.printf("Changed file state to [InProcess] : %s", path.c_str());
+
             uint32_t color[4] = COLOR5;
             _view.ChangeInputFileColor(path, color[0], color[1], color[2], color[3]);
             break;
@@ -109,6 +115,8 @@ protected:
 
         case ZrawProcessingModel::ConversionOk:
         {
+			_debug_visitor.printf("Changed file state to [ConversionOk] : %s", path.c_str());
+
             uint32_t color[4] = COLOR9;
             _view.ChangeInputFileColor(path, color[0], color[1], color[2], color[3]);
             break;
@@ -116,6 +124,8 @@ protected:
 
         case ZrawProcessingModel::ConversionFailed:
         {
+			_debug_visitor.printf("Changed file state to [ConversionFailed] : %s", path.c_str());
+
             uint32_t color[4] = COLOR8;
             _view.ChangeInputFileColor(path, color[0], color[1], color[2], color[3]);
             break;
@@ -123,6 +133,8 @@ protected:
 
         case ZrawProcessingModel::ConversionInterrupted:
         {
+			_debug_visitor.printf("Changed file state to [ConversionInterrupted] : %s", path.c_str());
+
             uint32_t color[4] = COLOR2;
             _view.ChangeInputFileColor(path, color[0], color[1], color[2], color[3]);
             break;
@@ -131,6 +143,8 @@ protected:
         case ZrawProcessingModel::NotConverted:
         default:
         {
+			_debug_visitor.printf("Changed file state to [NotConverted] : %s", path.c_str());
+
             uint32_t color[4] = COLOR7;
             _view.ChangeInputFileColor(path, color[0], color[1], color[2], color[3]);
             break;
