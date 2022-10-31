@@ -6,6 +6,7 @@
 #include <nana/gui/widgets/label.hpp>
 #include <nana/gui/widgets/textbox.hpp>
 #include <nana/gui/widgets/button.hpp>
+#include <nana/gui/widgets/combox.hpp>
 #include <nana/gui/filebox.hpp>
 
 #include <IFileSelectionView.hpp>
@@ -49,7 +50,7 @@ public:
         if (!initialized_)
         {
             place_.bind(*this);
-            place_.div("margin=[5,5,5,5] <vert margin=[5,5,5,5] gap=2 arrange=[20,130,variable] field1>");
+            place_.div("margin=[5,5,5,5] <vert margin=[5,5,5,5] gap=2 arrange=[20,150,variable] field1>");
             // panel1
             panel1.create(*this);
             place_["field1"] << panel1;
@@ -77,7 +78,7 @@ public:
             // panel5
             panel5.create(panel32);
             panel5_place_.bind(panel5);
-            panel5_place_.div("margin=[5,5,5,5] <margin=[5,5,5,5] gap=2 arrange=[100,variable,100] field5>");
+            panel5_place_.div("margin=[5,5,5,5] <margin=[5,5,5,5] gap=2 arrange=[120,variable,100] field5>");
             panel5.transparent(true);
             panel32_place_["field3"] << panel5;
             // label11
@@ -117,12 +118,45 @@ public:
                     TRIGGER_EVENT(EventOutputPathSelection, files[0].string());
                 }
             });
+
+            // _compressionModeComboxPanel
+
+            _compressionModeComboxPanel.create(panel32);
+            _compressionModeComboxPlace.bind(_compressionModeComboxPanel);
+            _compressionModeComboxPlace.div("margin=[5,5,5,5] <margin=[5,5,5,5] gap=2 arrange=[120,150] _field_>");
+            _compressionModeComboxPanel.transparent(true);
+            panel32_place_["field3"] << _compressionModeComboxPanel;
+
+            _compressionModeLabel.create(_compressionModeComboxPanel);
+            _compressionModeComboxPlace["_field_"] << _compressionModeLabel;
+            _compressionModeLabel.transparent(true);
+            _compressionModeLabel.caption("DNG Compression:");
+
+            _compressionModeCombox.create(_compressionModeComboxPanel);
+            _compressionModeCombox.push_back("None");
+            _compressionModeCombox.push_back("Lossless JPEG");
+            _compressionModeCombox.events().selected([&](const arg_combox& arg)
+            {
+                auto cap = arg.widget.caption();
+                if (cap == "None")
+                {
+                    TRIGGER_EVENT(EventCompressionModeSelection, None);
+                }
+                else if (cap == "Lossless JPEG")
+                {
+                    TRIGGER_EVENT(EventCompressionModeSelection, LosslessJPEG);
+                }
+            });
+            _compressionModeCombox.option(1);
+            _compressionModeComboxPlace["_field_"] << _compressionModeCombox;
+
             // panel6
             panel6.create(panel32);
             panel6_place_.bind(panel6);
             panel6_place_.div("weight=25 margin=[5,5,5,20] gap=2 arrange=[40,variable] _field_");
             panel6.transparent(true);
             panel32_place_["field3"] << panel6;
+
             // label2
             label2.create(panel6);
             panel6_place_["_field_"] << label2;
@@ -150,6 +184,7 @@ public:
         group1.collocate();
         panel32_place_.collocate();
         panel5_place_.collocate();
+        _compressionModeComboxPlace.collocate();
 
         OnThemeChanged(ViewThemeSingleton::Instance());
     }
@@ -175,6 +210,10 @@ public:
         SelectOutputPathButton.enabled(isActive);
     }
 
+    void SetCompressionMode(CompressionMode_t mode) override
+    {
+    }
+
 protected:
     nana::place place_;
     nana::panel<true> panel1;
@@ -195,6 +234,11 @@ protected:
     conv_label label3;
     nana::panel<true> panel31;
     nana::panel<true> panel21;
+
+    nana::panel<true> _compressionModeComboxPanel;
+    nana::place _compressionModeComboxPlace;
+    conv_label _compressionModeLabel;
+    nana::combox _compressionModeCombox;
 
     // ===
 
