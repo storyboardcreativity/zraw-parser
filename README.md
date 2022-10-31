@@ -2,6 +2,8 @@
 
 This is a free draft ZRAW decoder. This tool allows to extract ZRAW video files to DNG sequences or HEVC bitstreams (according to camera firmware version).
 
+<img src="docs/window.png" alt="Program Screenshot">
+
 ## Community
 
 <a href="https://t.me/zcam_rus" target="_blank"><img src="docs/soc_net_icons/telegram.png" alt="Buy Me A Coffee" style="height: 40px !important;width: 40px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
