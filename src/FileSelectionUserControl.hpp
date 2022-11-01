@@ -6,7 +6,6 @@
 #include <nana/gui/widgets/label.hpp>
 #include <nana/gui/widgets/textbox.hpp>
 #include <nana/gui/widgets/button.hpp>
-#include <nana/gui/widgets/combox.hpp>
 #include <nana/gui/filebox.hpp>
 
 #include <IFileSelectionView.hpp>
@@ -14,6 +13,7 @@
 #include "theme/conv_button.hpp"
 #include "theme/conv_label.hpp"
 #include "theme/conv_textbox.hpp"
+#include "theme/conv_combox.hpp"
 
 #include "ViewThemeSingleton.hpp"
 
@@ -238,7 +238,7 @@ protected:
     nana::panel<true> _compressionModeComboxPanel;
     nana::place _compressionModeComboxPlace;
     conv_label _compressionModeLabel;
-    nana::combox _compressionModeCombox;
+    conv_combox _compressionModeCombox;
 
     // ===
 
