@@ -21,6 +21,7 @@ public:
     ) : _fsp(std::move(fsp)), _ifip(std::move(ifip)), _bclp(std::move(bclp)), _mfp(mfp), _debug_visitor(debug_visitor), _model(model), _converter(_model, debug_visitor, mfp.ProgressBar())
     {
         _fsp->EventOutputPathSelection += MakeDelegate(this, &MainFormPanelPresenter::OnOutputPathSelection);
+        _fsp->EventCompressionModeSelection += MakeDelegate(this, &MainFormPanelPresenter::OnCompressionModeSelection);
 
         _mfp.EventProcessButtonClick += MakeDelegate(this, &MainFormPanelPresenter::OnProcessButtonClick);
 
@@ -46,6 +47,7 @@ public:
 
         _mfp.EventProcessButtonClick -= MakeDelegate(this, &MainFormPanelPresenter::OnProcessButtonClick);
 
+        _fsp->EventCompressionModeSelection -= MakeDelegate(this, &MainFormPanelPresenter::OnCompressionModeSelection);
         _fsp->EventOutputPathSelection -= MakeDelegate(this, &MainFormPanelPresenter::OnOutputPathSelection);
     }
 
@@ -54,6 +56,23 @@ protected:
     void OnOutputPathSelection(std::string path)
     {
         _model.OutputFolderPath_set(path);
+    }
+
+    void OnCompressionModeSelection(IFileSelectionView::CompressionMode_t mode)
+    {
+        switch (mode)
+        {
+        case IFileSelectionView::CompressionMode_t::None:
+            _model.RawCompression_set(ZrawProcessingModel::RawCompression_t::None);
+            break;
+
+        case IFileSelectionView::CompressionMode_t::LosslessJPEG:
+            _model.RawCompression_set(ZrawProcessingModel::RawCompression_t::LosslessJPEG);
+            break;
+
+        default:
+            break;
+        }
     }
 
     void OnModelValidityUpdate(bool isValid, std::string descriprion)

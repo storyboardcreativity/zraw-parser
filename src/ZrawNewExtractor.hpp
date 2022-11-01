@@ -49,7 +49,7 @@ public:
         NotImplemented
     };
 
-    ConversionResult ProcessConversion(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput &console, IProgressBar& progressBar, std::string zraw_file_path, std::string output_path)
+    ConversionResult ProcessConversion(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput &console, IProgressBar& progressBar, std::string zraw_file_path, std::string output_path, ZrawProcessingModel::RawCompression_t compression)
     {
         console.printf("Converting file %s\n", zraw_file_path.c_str());
 
@@ -152,7 +152,7 @@ public:
         switch (ext_zraw.version)
         {
         case 0x12EA78D2:
-            subRes = process_zraw_old_raw(itsTimeToStopOkay, console, progressBar, f_in, mov, dirPath);
+            subRes = process_zraw_old_raw(itsTimeToStopOkay, console, progressBar, f_in, mov, dirPath, compression);
             break;
         case 0x45A32DEF:
             subRes = process_zraw_new_raw(itsTimeToStopOkay, console, progressBar, f_in, mov, dirPath, ext_zraw);
@@ -212,7 +212,7 @@ protected:
         }
     }
 
-    ConversionResult process_zraw_old_raw(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput &console, IProgressBar& progressBar, std::istream &f_in, TinyMovFile &mov, std::string &output_path)
+    ConversionResult process_zraw_old_raw(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput &console, IProgressBar& progressBar, std::istream &f_in, TinyMovFile &mov, std::string &output_path, ZrawProcessingModel::RawCompression_t compression)
     {
         for (int i = 0; i < mov.Tracks().size(); ++i)
         {
@@ -275,7 +275,7 @@ protected:
                             console.printf("Converting zraw frame #%d to DNG...\n", p);
                             progressBar.SetDescription("Converting zraw frame #%d to DNG...", p);
 
-                            _threads[th_index]->SetProcessingFrame(console, frame_data, output_dng_path);
+                            _threads[th_index]->SetProcessingFrame(console, frame_data, output_dng_path, compression);
 
                             th_found = true;
                             break;

@@ -22,6 +22,12 @@ public:
         ConversionFailed
     } InputFileInfoState_t;
 
+    typedef enum RawCompression_e
+    {
+        None,
+        LosslessJPEG
+    } RawCompression_t;
+
     // Triggered on each model validity update (bool - isOk, string - description)
     DECLARE_EVENT(void, bool, std::string) EventValidityUpdate;
 
@@ -40,7 +46,7 @@ public:
     // Triggered on each input file conversion state change
     DECLARE_EVENT(void, std::string, InputFileInfoState_t) EventInputFilePathConversionStateUpdate;
 
-    ZrawProcessingModel() : _isValid(false)
+    ZrawProcessingModel() : _isValid(false), _compression(LosslessJPEG)
     {
         _updateValidityInfo();
     }
@@ -54,6 +60,16 @@ public:
     std::string OutputFolderPath_get()
     {
         return _outputFolderPath;
+    }
+
+    void RawCompression_set(RawCompression_t compression)
+    {
+        _compression = compression;
+    }
+
+    RawCompression_t RawCompression_get()
+    {
+        return _compression;
     }
 
     void InputFilePathActive_set(std::string path)
@@ -434,16 +450,16 @@ protected:
         //auto tracksInfo = MovDetectTracks(path.c_str());
         //info.tracksInfo = tracksInfo;
 
-		try
-		{
-			TinyMovFileReader reader;
-			info.mov = reader.OpenMovFile(path.c_str());
-		}
-		catch (...)
-		{
-			InputFilePathConversionState_set(path, Unconvertable);
-			return false;
-		}
+        try
+        {
+            TinyMovFileReader reader;
+            info.mov = reader.OpenMovFile(path.c_str());
+        }
+        catch (...)
+        {
+            InputFilePathConversionState_set(path, Unconvertable);
+            return false;
+        }
 
         //TRIGGER_EVENT(EventMovContainerLogUpdate, info.output_log);
 
@@ -507,6 +523,6 @@ protected:
     bool _isValid;
     std::string _validityDescriprion;
 
-
+    RawCompression_t _compression;
 
 };

@@ -63,7 +63,7 @@ protected:
         return false;
     }
 
-    static bool process_dng(IConsoleOutput& console, std::vector<uint8_t>& buffer, std::string outputRawFilePath)
+    static bool process_dng(IConsoleOutput& console, std::vector<uint8_t>& buffer, std::string outputRawFilePath, ZrawProcessingModel::RawCompression_t compression)
     {
         // Create ZRAW decoder
         auto decoder = zraw_decoder__create();
@@ -113,7 +113,21 @@ protected:
         dng_image.SetBitsPerSample(1, bps);
 
         dng_image.SetPlanarConfig(tinydngwriter::PLANARCONFIG_CONTIG);
-        dng_image.SetCompression(tinydngwriter::COMPRESSION_NONE);
+
+        switch (compression)
+        {
+        case ZrawProcessingModel::RawCompression_t::None:
+            dng_image.SetCompression(tinydngwriter::COMPRESSION_NONE);
+            break;
+
+        case ZrawProcessingModel::RawCompression_t::LosslessJPEG:
+            dng_image.SetCompression(tinydngwriter::COMPRESSION_NEW_JPEG);
+            break;
+
+        default:
+            return false;
+        }
+        
         dng_image.SetPhotometric(tinydngwriter::PHOTOMETRIC_CFA);
         dng_image.SetXResolution(300.0);
         dng_image.SetYResolution(300.0);
@@ -191,7 +205,19 @@ protected:
             return false;
         }
 
-        dng_image.SetImageDataPacked(image_data.data(), image_data.size(), frame_info.bits_per_photodiode_value, true);
+        switch (compression)
+        {
+        case ZrawProcessingModel::RawCompression_t::None:
+            dng_image.SetImageDataPacked(image_data.data(), image_data.size(), frame_info.bits_per_photodiode_value, true);
+            break;
+
+        case ZrawProcessingModel::RawCompression_t::LosslessJPEG:
+            dng_image.SetImageDataJpeg(image_data.data(), frame_info.width_in_photodiodes, frame_info.height_in_photodiodes, frame_info.bits_per_photodiode_value);
+            break;
+
+        default:
+            return false;
+        }
 
         tinydngwriter::DNGWriter dng_writer(false);
         dng_writer.AddImage(&dng_image);
@@ -215,7 +241,7 @@ protected:
                 }
 
                 _console->printf("Received DNG frame task!\n");
-                process_dng(*_console, _currentFrameData, _currentFrameOutputDngPath);
+                process_dng(*_console, _currentFrameData, _currentFrameOutputDngPath, _compression);
 
                 _finished = true;
             }
@@ -235,11 +261,12 @@ protected:
     IConsoleOutput* _console;
     std::vector<uint8_t> _currentFrameData;
     std::string _currentFrameOutputDngPath;
+    ZrawProcessingModel::RawCompression_t _compression;
 
 public:
     ZrawConverterThread() : _runs(true), _finished(true), _thread(&ZrawConverterThread::_thread_func, this), _console(nullptr) {}
 
-    bool SetProcessingFrame(IConsoleOutput& console, std::vector<uint8_t>& frameData, std::string currentFrameOutputDngPath)
+    bool SetProcessingFrame(IConsoleOutput& console, std::vector<uint8_t>& frameData, std::string currentFrameOutputDngPath, ZrawProcessingModel::RawCompression_t compression)
     {
         _mutex.lock();
 
@@ -254,6 +281,7 @@ public:
         _console = &console;
         _currentFrameOutputDngPath = currentFrameOutputDngPath;
         _currentFrameData = frameData;
+        _compression = compression;
 
         // Start processing
         _finished = false;
