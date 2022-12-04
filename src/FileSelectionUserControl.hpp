@@ -50,7 +50,7 @@ public:
         if (!initialized_)
         {
             place_.bind(*this);
-            place_.div("margin=[5,5,5,5] <vert margin=[5,5,5,5] gap=2 arrange=[20,150,variable] field1>");
+            place_.div("margin=[5,5,5,5] <vert margin=[5,5,5,5] gap=2 arrange=[20,200,variable] field1>");
             // panel1
             panel1.create(*this);
             place_["field1"] << panel1;
@@ -71,7 +71,7 @@ public:
             // panel32
             panel32.create(group1);
             panel32_place_.bind(panel32);
-            panel32_place_.div("<vert gap=2 arrange=[variable,variable,25] field3>");
+            panel32_place_.div("<vert gap=2 arrange=[variable,variable,variable,25] field3>");
             panel32.transparent(true);
             group1["_field_"] << panel32;
 
@@ -132,6 +132,8 @@ public:
             _compressionModeLabel.transparent(true);
             _compressionModeLabel.caption("DNG Compression:");
 
+            // _compressionModeCombox
+
             _compressionModeCombox.create(_compressionModeComboxPanel);
             _compressionModeCombox.push_back("None");
             _compressionModeCombox.push_back("Lossless JPEG");
@@ -149,6 +151,44 @@ public:
             });
             _compressionModeCombox.option(1);
             _compressionModeComboxPlace["_field_"] << _compressionModeCombox;
+
+            // _rawScaleComboxPanel
+
+            _rawScaleComboxPanel.create(panel32);
+            _rawScaleComboxPlace.bind(_rawScaleComboxPanel);
+            _rawScaleComboxPlace.div("margin=[5,5,5,5] <margin=[5,5,5,5] gap=2 arrange=[120,150] _field_>");
+            _rawScaleComboxPanel.transparent(true);
+            panel32_place_["field3"] << _rawScaleComboxPanel;
+
+            _rawScaleLabel.create(_rawScaleComboxPanel);
+            _rawScaleComboxPlace["_field_"] << _rawScaleLabel;
+            _rawScaleLabel.transparent(true);
+            _rawScaleLabel.caption("Resolution:");
+
+            // _rawScaleCombox
+
+            _rawScaleCombox.create(_rawScaleComboxPanel);
+            _rawScaleCombox.push_back("Full");
+            _rawScaleCombox.push_back("1/2");
+            _rawScaleCombox.push_back("1/4");
+            _rawScaleCombox.events().selected([&](const arg_combox& arg)
+            {
+                auto cap = arg.widget.caption();
+                if (cap == "Full")
+                {
+                    TRIGGER_EVENT(EventRawScaleModeSelection, Full);
+                }
+                else if (cap == "1/2")
+                {
+                    TRIGGER_EVENT(EventRawScaleModeSelection, Half);
+                }
+                else if (cap == "1/4")
+                {
+                    TRIGGER_EVENT(EventRawScaleModeSelection, Quarter);
+                }
+            });
+            _rawScaleCombox.option(0);
+            _rawScaleComboxPlace["_field_"] << _rawScaleCombox;
 
             // panel6
             panel6.create(panel32);
@@ -214,6 +254,10 @@ public:
     {
     }
 
+    void SetRawScaleMode(RawScaleMode_t mode) override
+    {
+    }
+
 protected:
     nana::place place_;
     nana::panel<true> panel1;
@@ -235,10 +279,19 @@ protected:
     nana::panel<true> panel31;
     nana::panel<true> panel21;
 
+    // Compression mode widgets
+
     nana::panel<true> _compressionModeComboxPanel;
     nana::place _compressionModeComboxPlace;
     conv_label _compressionModeLabel;
     conv_combox _compressionModeCombox;
+
+    // RAW scale mode widgets
+
+    nana::panel<true> _rawScaleComboxPanel;
+    nana::place _rawScaleComboxPlace;
+    conv_label _rawScaleLabel;
+    conv_combox _rawScaleCombox;
 
     // ===
 

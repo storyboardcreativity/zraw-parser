@@ -22,6 +22,7 @@ public:
     {
         _fsp->EventOutputPathSelection += MakeDelegate(this, &MainFormPanelPresenter::OnOutputPathSelection);
         _fsp->EventCompressionModeSelection += MakeDelegate(this, &MainFormPanelPresenter::OnCompressionModeSelection);
+        _fsp->EventRawScaleModeSelection += MakeDelegate(this, &MainFormPanelPresenter::OnRawScaleModeSelection);
 
         _mfp.EventProcessButtonClick += MakeDelegate(this, &MainFormPanelPresenter::OnProcessButtonClick);
 
@@ -47,6 +48,7 @@ public:
 
         _mfp.EventProcessButtonClick -= MakeDelegate(this, &MainFormPanelPresenter::OnProcessButtonClick);
 
+        _fsp->EventRawScaleModeSelection -= MakeDelegate(this, &MainFormPanelPresenter::OnRawScaleModeSelection);
         _fsp->EventCompressionModeSelection -= MakeDelegate(this, &MainFormPanelPresenter::OnCompressionModeSelection);
         _fsp->EventOutputPathSelection -= MakeDelegate(this, &MainFormPanelPresenter::OnOutputPathSelection);
     }
@@ -68,6 +70,27 @@ protected:
 
         case IFileSelectionView::CompressionMode_t::LosslessJPEG:
             _model.RawCompression_set(ZrawProcessingModel::RawCompression_t::LosslessJPEG);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    void OnRawScaleModeSelection(IFileSelectionView::RawScaleMode_t mode)
+    {
+        switch (mode)
+        {
+        case IFileSelectionView::RawScaleMode_t::Full:
+            _model.RawScale_set(ZrawProcessingModel::RawScale_t::Full);
+            break;
+
+        case IFileSelectionView::RawScaleMode_t::Half:
+            _model.RawScale_set(ZrawProcessingModel::RawScale_t::Half);
+            break;
+
+        case IFileSelectionView::RawScaleMode_t::Quarter:
+            _model.RawScale_set(ZrawProcessingModel::RawScale_t::Quarter);
             break;
 
         default:

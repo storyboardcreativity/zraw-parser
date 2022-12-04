@@ -49,7 +49,7 @@ public:
         NotImplemented
     };
 
-    ConversionResult ProcessConversion(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput &console, IProgressBar& progressBar, std::string zraw_file_path, std::string output_path, ZrawProcessingModel::RawCompression_t compression)
+    ConversionResult ProcessConversion(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput &console, IProgressBar& progressBar, std::string zraw_file_path, std::string output_path, ZrawProcessingModel::RawCompression_t compression, ZrawProcessingModel::RawScale_t scale)
     {
         console.printf("Converting file %s\n", zraw_file_path.c_str());
 
@@ -152,7 +152,7 @@ public:
         switch (ext_zraw.version)
         {
         case 0x12EA78D2:
-            subRes = process_zraw_old_raw(itsTimeToStopOkay, console, progressBar, f_in, mov, dirPath, compression);
+            subRes = process_zraw_old_raw(itsTimeToStopOkay, console, progressBar, f_in, mov, dirPath, compression, scale);
             break;
         case 0x45A32DEF:
             subRes = process_zraw_new_raw(itsTimeToStopOkay, console, progressBar, f_in, mov, dirPath, ext_zraw);
@@ -212,7 +212,7 @@ protected:
         }
     }
 
-    ConversionResult process_zraw_old_raw(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput &console, IProgressBar& progressBar, std::istream &f_in, TinyMovFile &mov, std::string &output_path, ZrawProcessingModel::RawCompression_t compression)
+    ConversionResult process_zraw_old_raw(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput &console, IProgressBar& progressBar, std::istream &f_in, TinyMovFile &mov, std::string &output_path, ZrawProcessingModel::RawCompression_t compression, ZrawProcessingModel::RawScale_t scale)
     {
         for (int i = 0; i < mov.Tracks().size(); ++i)
         {
@@ -275,7 +275,15 @@ protected:
                             console.printf("Converting zraw frame #%d to DNG...\n", p);
                             progressBar.SetDescription("Converting zraw frame #%d to DNG...", p);
 
-                            _threads[th_index]->SetProcessingFrame(console, frame_data, output_dng_path, compression);
+                            // Prepare parameters
+                            ZrawConverterThread::Parameters parameters;
+                            parameters.camera_model = ZrawConverterThread::Parameters::CameraModel_t::E2;
+                            parameters.compression = compression;
+                            parameters.scale = scale;
+                            parameters.dng_path = output_dng_path;
+                            parameters.frameData = frame_data;
+
+                            _threads[th_index]->SetProcessingFrame(console, parameters);
 
                             th_found = true;
                             break;

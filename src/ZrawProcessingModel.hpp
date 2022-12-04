@@ -28,6 +28,13 @@ public:
         LosslessJPEG
     } RawCompression_t;
 
+    typedef enum RawScale_e
+    {
+        Full,
+        Half,
+        Quarter
+    } RawScale_t;
+
     // Triggered on each model validity update (bool - isOk, string - description)
     DECLARE_EVENT(void, bool, std::string) EventValidityUpdate;
 
@@ -46,7 +53,7 @@ public:
     // Triggered on each input file conversion state change
     DECLARE_EVENT(void, std::string, InputFileInfoState_t) EventInputFilePathConversionStateUpdate;
 
-    ZrawProcessingModel() : _isValid(false), _compression(LosslessJPEG)
+    ZrawProcessingModel() : _isValid(false), _compression(LosslessJPEG), _scale(Full)
     {
         _updateValidityInfo();
     }
@@ -70,6 +77,16 @@ public:
     RawCompression_t RawCompression_get()
     {
         return _compression;
+    }
+
+    void RawScale_set(RawScale_t scale)
+    {
+        _scale = scale;
+    }
+
+    RawScale_t RawScale_get()
+    {
+        return _scale;
     }
 
     void InputFilePathActive_set(std::string path)
@@ -524,5 +541,6 @@ protected:
     std::string _validityDescriprion;
 
     RawCompression_t _compression;
+    RawScale_t _scale;
 
 };

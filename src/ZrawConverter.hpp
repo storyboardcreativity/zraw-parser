@@ -118,7 +118,7 @@ protected:
                 _model.InputFilePathConversionState_set(*it, ZrawProcessingModel::InputFileInfoState_e::InProcess);
 
                 ZrawNewExtractor extractor;
-                switch (extractor.ProcessConversion(itsTimeToStopOkay, console, progressBarLocal, *it, outputFilePath, _model.RawCompression_get()))
+                switch (extractor.ProcessConversion(itsTimeToStopOkay, console, progressBarLocal, *it, outputFilePath, _model.RawCompression_get(), _model.RawScale_get()))
                 {
                 case ZrawNewExtractor::Done:
                     console.printf("Finished conversion process.\n");

@@ -17,6 +17,14 @@ public:
     } CompressionMode_t;
     DECLARE_EVENT(void, CompressionMode_t mode) EventCompressionModeSelection;
 
+    typedef enum RawScaleMode_e
+    {
+        Full,
+        Half,
+        Quarter
+    } RawScaleMode_t;
+    DECLARE_EVENT(void, RawScaleMode_t mode) EventRawScaleModeSelection;
+
     virtual void SetSelectedOutputPathFieldText(std::string path) = 0;
 
     virtual void SetStatusText(std::string text, bool isOk) = 0;
@@ -24,4 +32,6 @@ public:
     virtual void SetActivity(bool isActive) = 0;
 
     virtual void SetCompressionMode(CompressionMode_t mode) = 0;
+
+    virtual void SetRawScaleMode(RawScaleMode_t mode) = 0;
 };

@@ -12,6 +12,30 @@
 
 class ZrawConverterThread
 {
+public:
+    struct Parameters
+    {
+        typedef enum CameraModel_e
+        {
+            Unknown,
+            E2,
+            E2C,
+            E2G,
+            E2_M4,
+            E2_S6,
+            E2_F6,
+            E2_F8,
+            E2_S6G
+        } CameraModel_t;
+
+        CameraModel_t camera_model;
+        ZrawProcessingModel::RawCompression_t compression;
+        ZrawProcessingModel::RawScale_t scale;
+        std::string dng_path;
+        std::vector<uint8_t> frameData;
+        
+    };
+
 protected:
     static bool process_zraw_decoder_state(IConsoleOutput &console, zraw_decoder_state_t state)
     {
@@ -63,7 +87,26 @@ protected:
         return false;
     }
 
-    static bool process_dng(IConsoleOutput& console, std::vector<uint8_t>& buffer, std::string outputRawFilePath, ZrawProcessingModel::RawCompression_t compression)
+    // RAW -> 1/2 RAW
+    static std::vector<uint16_t> downscale_raw_twice(std::vector<uint16_t>& image, uint32_t width, uint32_t height)
+    {
+        std::vector<uint16_t> result(width * height / 4);
+
+        for (int y = 0; y < height; y += 4)
+        {
+            for (int x = 0; x < width; x += 4)
+            {
+                result[(y / 2 + 0) * (width / 2) + (x / 2 + 0)] = ((uint32_t)image[(y + 0) * width + x + 0] + (uint32_t)image[(y + 0) * width + x + 2] + (uint32_t)image[(y + 2) * width + x + 0] + (uint32_t)image[(y + 2) * width + x + 2]) / 4;
+                result[(y / 2 + 0) * (width / 2) + (x / 2 + 1)] = ((uint32_t)image[(y + 0) * width + x + 1] + (uint32_t)image[(y + 0) * width + x + 3] + (uint32_t)image[(y + 2) * width + x + 1] + (uint32_t)image[(y + 2) * width + x + 3]) / 4;
+                result[(y / 2 + 1) * (width / 2) + (x / 2 + 0)] = ((uint32_t)image[(y + 1) * width + x + 0] + (uint32_t)image[(y + 1) * width + x + 2] + (uint32_t)image[(y + 3) * width + x + 0] + (uint32_t)image[(y + 3) * width + x + 2]) / 4;
+                result[(y / 2 + 1) * (width / 2) + (x / 2 + 1)] = ((uint32_t)image[(y + 1) * width + x + 1] + (uint32_t)image[(y + 1) * width + x + 3] + (uint32_t)image[(y + 3) * width + x + 1] + (uint32_t)image[(y + 3) * width + x + 3]) / 4;
+            }
+        }
+
+        return result;
+    }
+
+    static bool process_dng(IConsoleOutput& console, Parameters parameters)
     {
         // Create ZRAW decoder
         auto decoder = zraw_decoder__create();
@@ -75,7 +118,7 @@ protected:
 
         // Read frame from buffer
         //progressBar.SetDescription("Fetching ZRAW frame info - %s", outputRawFilePath.c_str());
-        auto reading_state = zraw_decoder__read_hisi_frame(decoder, buffer.data(), buffer.size());
+        auto reading_state = zraw_decoder__read_hisi_frame(decoder, parameters.frameData.data(), parameters.frameData.size());
         if (!process_zraw_decoder_state(console, reading_state))
         {
             console.printf("Frame reading failed!\n");
@@ -103,9 +146,32 @@ protected:
         dng_image.SetBigEndian(false);
 
         dng_image.SetSubfileType(false, false, false);
-        dng_image.SetImageWidth(frame_info.width_in_photodiodes);
-        dng_image.SetImageLength(frame_info.height_in_photodiodes);
-        dng_image.SetRowsPerStrip(frame_info.height_in_photodiodes);
+
+        switch (parameters.scale)
+        {
+        case ZrawProcessingModel::RawScale_t::Full:
+            dng_image.SetImageWidth(frame_info.width_in_photodiodes);
+            dng_image.SetImageLength(frame_info.height_in_photodiodes);
+            dng_image.SetRowsPerStrip(frame_info.height_in_photodiodes);
+            break;
+
+        case ZrawProcessingModel::RawScale_t::Half:
+            dng_image.SetImageWidth(frame_info.width_in_photodiodes / 2);
+            dng_image.SetImageLength(frame_info.height_in_photodiodes / 2);
+            dng_image.SetRowsPerStrip(frame_info.height_in_photodiodes / 2);
+            break;
+
+        case ZrawProcessingModel::RawScale_t::Quarter:
+            dng_image.SetImageWidth(frame_info.width_in_photodiodes / 4);
+            dng_image.SetImageLength(frame_info.height_in_photodiodes / 4);
+            dng_image.SetRowsPerStrip(frame_info.height_in_photodiodes / 4);
+            break;
+
+        default:
+            console.printf("Unknown RAW scale mode!\n");
+            return false;
+        }
+
         dng_image.SetSamplesPerPixel(1);
 
         // Bits Per Photodiode value
@@ -114,7 +180,7 @@ protected:
 
         dng_image.SetPlanarConfig(tinydngwriter::PLANARCONFIG_CONTIG);
 
-        switch (compression)
+        switch (parameters.compression)
         {
         case ZrawProcessingModel::RawCompression_t::None:
             dng_image.SetCompression(tinydngwriter::COMPRESSION_NONE);
@@ -125,6 +191,7 @@ protected:
             break;
 
         default:
+            console.printf("Unknown RAW compression mode!\n");
             return false;
         }
         
@@ -135,7 +202,46 @@ protected:
         dng_image.SetResolutionUnit(tinydngwriter::RESUNIT_NONE);
         dng_image.SetImageDescription("[Storyboard Creativity] ZRAW -> DNG converter generated image.");
 
-        dng_image.SetUniqueCameraModel("Z CAM E2");
+        // Camera Model
+        switch (parameters.camera_model)
+        {
+        case Parameters::CameraModel_t::E2:
+            dng_image.SetUniqueCameraModel("Z CAM E2");
+            break;
+
+        case Parameters::CameraModel_t::E2C:
+            dng_image.SetUniqueCameraModel("Z CAM E2C");
+            break;
+
+        case Parameters::CameraModel_t::E2G:
+            dng_image.SetUniqueCameraModel("Z CAM E2G");
+            break;
+
+        case Parameters::CameraModel_t::E2_M4:
+            dng_image.SetUniqueCameraModel("Z CAM E2-M4");
+            break;
+
+        case Parameters::CameraModel_t::E2_S6:
+            dng_image.SetUniqueCameraModel("Z CAM E2-S6");
+            break;
+
+        case Parameters::CameraModel_t::E2_F6:
+            dng_image.SetUniqueCameraModel("Z CAM E2-F6");
+            break;
+
+        case Parameters::CameraModel_t::E2_F8:
+            dng_image.SetUniqueCameraModel("Z CAM E2-F8");
+            break;
+
+        case Parameters::CameraModel_t::E2_S6G:
+            dng_image.SetUniqueCameraModel("Z CAM E2-S6G");
+            break;
+
+        case Parameters::CameraModel_t::Unknown:
+        default:
+            dng_image.SetUniqueCameraModel("Unknown camera with ZRAW codec");
+            break;
+        }
 
         // CM1
         double matrix1[] =
@@ -205,14 +311,49 @@ protected:
             return false;
         }
 
-        switch (compression)
+        uint32_t w = frame_info.width_in_photodiodes;
+        uint32_t h = frame_info.height_in_photodiodes;
+        switch (parameters.scale)
+        {
+        case ZrawProcessingModel::RawScale_t::Full:
+            break;
+
+        case ZrawProcessingModel::RawScale_t::Half:
+
+            // Make 1/2
+            image_data = downscale_raw_twice(image_data, w, h);
+            w /= 2;
+            h /= 2;
+
+            break;
+
+        case ZrawProcessingModel::RawScale_t::Quarter:
+
+            // Make 1/2
+            image_data = downscale_raw_twice(image_data, w, h);
+            w /= 2;
+            h /= 2;
+
+            // Make 1/4
+            image_data = downscale_raw_twice(image_data, w, h);
+            w /= 2;
+            h /= 2;
+
+            break;
+
+        default:
+            console.printf("Unknown RAW scale mode!\n");
+            return false;
+        }
+
+        switch (parameters.compression)
         {
         case ZrawProcessingModel::RawCompression_t::None:
             dng_image.SetImageDataPacked(image_data.data(), image_data.size(), frame_info.bits_per_photodiode_value, true);
             break;
 
         case ZrawProcessingModel::RawCompression_t::LosslessJPEG:
-            dng_image.SetImageDataJpeg(image_data.data(), frame_info.width_in_photodiodes, frame_info.height_in_photodiodes, frame_info.bits_per_photodiode_value);
+            dng_image.SetImageDataJpeg(image_data.data(), w, h, frame_info.bits_per_photodiode_value);
             break;
 
         default:
@@ -223,7 +364,7 @@ protected:
         dng_writer.AddImage(&dng_image);
 
         std::string err;
-        dng_writer.WriteToFile(outputRawFilePath.c_str(), &err);
+        dng_writer.WriteToFile(parameters.dng_path.c_str(), &err);
 
         return true;
     }
@@ -241,7 +382,7 @@ protected:
                 }
 
                 _console->printf("Received DNG frame task!\n");
-                process_dng(*_console, _currentFrameData, _currentFrameOutputDngPath, _compression);
+                process_dng(*_console, _parameters);
 
                 _finished = true;
             }
@@ -259,14 +400,13 @@ protected:
     std::mutex _mutex;
 
     IConsoleOutput* _console;
-    std::vector<uint8_t> _currentFrameData;
-    std::string _currentFrameOutputDngPath;
-    ZrawProcessingModel::RawCompression_t _compression;
+
+    Parameters _parameters;
 
 public:
     ZrawConverterThread() : _runs(true), _finished(true), _thread(&ZrawConverterThread::_thread_func, this), _console(nullptr) {}
 
-    bool SetProcessingFrame(IConsoleOutput& console, std::vector<uint8_t>& frameData, std::string currentFrameOutputDngPath, ZrawProcessingModel::RawCompression_t compression)
+    bool SetProcessingFrame(IConsoleOutput& console, Parameters parameters)
     {
         _mutex.lock();
 
@@ -279,9 +419,7 @@ public:
 
         // Prepare parameters
         _console = &console;
-        _currentFrameOutputDngPath = currentFrameOutputDngPath;
-        _currentFrameData = frameData;
-        _compression = compression;
+        _parameters = parameters;
 
         // Start processing
         _finished = false;
