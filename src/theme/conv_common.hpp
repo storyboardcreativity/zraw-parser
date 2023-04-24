@@ -16,19 +16,31 @@
 #define FONT0_SIZE   9
 #define FONT0_NAME               "Consolas"
 
-// button image
+#ifdef _WIN32
 
-Resource g_res_vsbuttons(IDR_BINARY7, L"BINARY");
+    // button image
+    Resource g_res_vsbuttons(IDR_BINARY7, L"BINARY");
 
-// icon
+    // icon
+    Resource g_res_icon(IDR_BINARY6, L"BINARY");
 
-Resource g_res_icon(IDR_BINARY6, L"BINARY");
+    // logo
+    Resource g_res_about_logo(IDR_BINARY5, L"BINARY");
 
-// logo
+#elif __APPLE__
 
-Resource g_res_about_logo(IDR_BINARY5, L"BINARY");
+    // button image
+    Resource g_res_vsbuttons(0, "vsbuttons.bmp");
 
-//
+    // icon
+    Resource g_res_icon(0, "icon.bmp");
+
+    // logo
+    Resource g_res_about_logo(0, "about_logo.bmp");
+
+#else
+    #error !!! resources for Linux are not implemented yet!
+#endif
 
 #define COLOR0        {45, 45, 48, 1}            // Facade background
 #define COLOR0_NANA    nana::color(45, 45, 48, 1)

@@ -14,7 +14,6 @@ https://github.com/FFmpeg/FFmpeg/blob/master/libavformat/mov.c
 #include "string.h"
 
 #include <stdio.h>
-#include <malloc.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <limits.h>

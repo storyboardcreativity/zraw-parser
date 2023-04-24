@@ -66,8 +66,19 @@ public:
                 return DirectoryCreationFailed;
             }
         }
+#elif __APPLE__
+#include <sys/stat.h>
+#include <sys/types.h>
+    if (mkdir(dirPath.c_str(), 0777) != 0)
+        {
+            if (errno != EEXIST)
+            {
+                console.printf("Could not create folder: %s\n", dirPath.c_str());
+                return DirectoryCreationFailed;
+            }
+        }
 #else
-#error !!! mkdir for Linux is not implemented yet!
+#error !!! mkdir for this OS is not implemented yet!
 #endif
 
         // Get tracks info from input file

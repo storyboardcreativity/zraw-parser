@@ -94,7 +94,7 @@ protected:
                 auto* progressBarLocalPtr = _model.InputFilePathProgressBar_get(*it);
                 if (progressBarLocalPtr == nullptr)
                 {
-                    console.printf("Warning! Could not get progress bar from model for path \"%s\" - skipping!\n", *it);
+                    console.printf("Warning! Could not get progress bar from model for path \"%s\" - skipping!\n", it->c_str());
                     progressBarGlobal.SetDescription("Failed! Stopped. (watch debug log)");
                     progressBarGlobal.ChangePercent(0);
                     break;
