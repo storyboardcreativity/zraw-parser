@@ -17,14 +17,33 @@
 #include "theme/conv_label.hpp"
 #include "theme/conv_listbox.hpp"
 
+#ifdef __APPLE__
+    #include <mach-o/dyld.h>        // for _NSGetExecutablePath()
+#endif
+
 class DebugTabUserControl : public nana::panel<true>, public IConsoleView
 {
     class _console_output_class : public IConsoleOutput
     {
-        const std::string _log_file_path = "debug_log.log";
+        std::string _log_file_path;
+        const std::string _log_file_name = "debug_log.log";
     public:
         _console_output_class(DebugTabUserControl& control)
-            : _userControl(control), _start(std::chrono::system_clock::now()) {}
+            : _userControl(control), _start(std::chrono::system_clock::now())
+        {
+#ifdef __APPLE__
+            char buf [PATH_MAX];
+            uint32_t bufsize = PATH_MAX;
+            if(_NSGetExecutablePath(buf, &bufsize))
+                return;
+                
+            auto path = std::string(buf);
+            path = path.substr(0, path.find_last_of("\\/"));
+            _log_file_path = path + "/" + _log_file_name;
+#else
+            _log_file_path = _log_file_name;
+#endif
+        }
 
         void printf(const char* format, ...) override
         {
@@ -87,7 +106,7 @@ class DebugTabUserControl : public nana::panel<true>, public IConsoleView
 
             file.open(filepath, std::ios::out | std::ios::app);
             if (file.fail())
-                throw std::ios_base::failure(std::strerror(errno));
+                return;//throw std::ios_base::failure(std::strerror(errno));
 
             // make sure write fails with exception if something is wrong
             file.exceptions(file.exceptions() | std::ios::failbit | std::ifstream::badbit);
