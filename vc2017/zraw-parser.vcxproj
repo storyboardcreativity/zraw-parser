@@ -224,6 +224,7 @@ xcopy /e /k /h /i /y $(SolutionDir)..\res $(SolutionDir)..\build\res\</Command>
     <ClInclude Include="..\src\AboutTabUserControl.hpp" />
     <ClInclude Include="..\src\BatchConversionListPresenter.hpp" />
     <ClInclude Include="..\src\BatchConversionListUserControl.hpp" />
+    <ClInclude Include="..\src\bitwriter.hpp" />
     <ClInclude Include="..\src\byteswap.hpp" />
     <ClInclude Include="..\src\DebugTabUserControl.hpp" />
     <ClInclude Include="..\src\FileSelectionPresenter.hpp" />
@@ -237,6 +238,7 @@ xcopy /e /k /h /i /y $(SolutionDir)..\res $(SolutionDir)..\build\res\</Command>
     <ClInclude Include="..\src\InputFileInfoPresenter.hpp" />
     <ClInclude Include="..\src\InputFileInfoUserControl.hpp" />
     <ClInclude Include="..\src\IProgressBar.hpp" />
+    <ClInclude Include="..\src\lj92.hpp" />
     <ClInclude Include="..\src\MainFormPresenter.hpp" />
     <ClInclude Include="..\src\MainFormPresenterFactory.hpp" />
     <ClInclude Include="..\src\MainFormPanelPresenter.hpp" />

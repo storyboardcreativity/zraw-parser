@@ -22,17 +22,25 @@
 class ZrawNewExtractor
 {
 protected:
+    // Must be declared before _threads, the threads use it until they are deleted
+    ZrawConverterThread::Queue _queue;
     std::vector<ZrawConverterThread*> _threads;
 
 public:
-    ZrawNewExtractor()
+    explicit ZrawNewExtractor(unsigned thread_count = std::thread::hardware_concurrency()) : _queue(2)
     {
-        for (auto i = 0; i < std::thread::hardware_concurrency(); ++i)
-            _threads.push_back(new ZrawConverterThread());
+        // hardware_concurrency() can return 0
+        if (thread_count == 0)
+            thread_count = 1;
+
+        for (unsigned i = 0; i < thread_count; ++i)
+            _threads.push_back(new ZrawConverterThread(_queue));
     }
 
     ~ZrawNewExtractor()
     {
+        _queue.Close();
+
         for (int i = 0; i < _threads.size(); ++i)
         {
             delete _threads[i];
@@ -198,18 +206,7 @@ protected:
         console.printf("Waiting for DNG processing threads to finish their tasks...\n");
         progressBar.SetDescription("Waiting for DNG processing threads to finish their tasks...");
 
-        bool all_finished = false;
-        while (!all_finished)
-        {
-            for (int th_index = 0; th_index < _threads.size(); ++th_index)
-            {
-                if (_threads[th_index]->IsProcessingFrame())
-                    break;
-
-                if (th_index == _threads.size() - 1)
-                    all_finished = true;
-            }
-        }
+        _queue.WaitUntilIdle();
     }
 
     ConversionResult process_zraw_old_raw(std::atomic<bool>& itsTimeToStopOkay, IConsoleOutput &console, IProgressBar& progressBar, std::istream &f_in, TinyMovFile &mov, std::string &output_path, ZrawProcessingModel::RawCompression_t compression, ZrawProcessingModel::RawScale_t scale)
@@ -263,33 +260,21 @@ protected:
 
 #endif
 
-                bool th_found = false;
-                while (!th_found)
-                {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                    for (int th_index = 0; th_index < _threads.size(); ++th_index)
-                    {
-                        if (_threads[th_index]->IsProcessingFrame() == false)
-                        {
-                            // Convert extracted ZRAW frame to DNG
-                            console.printf("Converting zraw frame #%d to DNG...\n", p);
-                            progressBar.SetDescription("Converting zraw frame #%d to DNG...", p);
+                // Convert extracted ZRAW frame to DNG
+                console.printf("Converting zraw frame #%d to DNG...\n", p);
+                progressBar.SetDescription("Converting zraw frame #%d to DNG...", p);
 
-                            // Prepare parameters
-                            ZrawConverterThread::Parameters parameters;
-                            parameters.camera_model = ZrawConverterThread::Parameters::CameraModel_t::E2;
-                            parameters.compression = compression;
-                            parameters.scale = scale;
-                            parameters.dng_path = output_dng_path;
-                            parameters.frameData = frame_data;
+                // Prepare parameters
+                ZrawConverterThread::Queue::Task task;
+                task.console = &console;
+                task.parameters.camera_model = ZrawConverterThread::Parameters::CameraModel_t::E2;
+                task.parameters.compression = compression;
+                task.parameters.scale = scale;
+                task.parameters.dng_path = output_dng_path;
+                task.parameters.frameData = std::move(frame_data);
 
-                            _threads[th_index]->SetProcessingFrame(console, parameters);
-
-                            th_found = true;
-                            break;
-                        }
-                    }
-                }
+                // Blocks while the queue is full
+                _queue.Push(std::move(task));
             }
         }
 

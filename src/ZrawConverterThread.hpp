@@ -3,9 +3,15 @@
 #include <atomic>
 #include <queue>
 #include <mutex>
+#include <condition_variable>
+#include <cstring>
+#include <fstream>
+#include <sstream>
+#include <utility>
 
 #include "IConsoleOutput.hpp"
 #include <tiny_dng_writer.h>
+#include "lj92.hpp"
 
 #define LIB_ZRAW_STATIC
 #include <libzraw.h>
@@ -34,6 +40,74 @@ public:
         std::string dng_path;
         std::vector<uint8_t> frameData;
         
+    };
+
+    // Bounded queue of frames waiting for a worker thread
+    class Queue
+    {
+    public:
+        struct Task
+        {
+            IConsoleOutput* console;
+            Parameters parameters;
+        };
+
+        explicit Queue(size_t max_waiting) : _max_waiting(max_waiting), _busy(0), _closed(false) {}
+
+        void Push(Task task)
+        {
+            std::unique_lock<std::mutex> lock(_mutex);
+            _has_room.wait(lock, [this] { return _tasks.size() < _max_waiting; });
+            _tasks.push(std::move(task));
+            _has_task.notify_one();
+        }
+
+        // Returns false when the queue is closed and empty
+        bool Pop(Task& task)
+        {
+            std::unique_lock<std::mutex> lock(_mutex);
+            _has_task.wait(lock, [this] { return !_tasks.empty() || _closed; });
+            if (_tasks.empty())
+                return false;
+
+            task = std::move(_tasks.front());
+            _tasks.pop();
+            ++_busy;
+            _has_room.notify_one();
+            return true;
+        }
+
+        void TaskDone()
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            --_busy;
+            if (_busy == 0 && _tasks.empty())
+                _is_idle.notify_all();
+        }
+
+        void WaitUntilIdle()
+        {
+            std::unique_lock<std::mutex> lock(_mutex);
+            _is_idle.wait(lock, [this] { return _busy == 0 && _tasks.empty(); });
+        }
+
+        void Close()
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            _closed = true;
+            _has_task.notify_all();
+        }
+
+    private:
+        std::mutex _mutex;
+        std::condition_variable _has_task;
+        std::condition_variable _has_room;
+        std::condition_variable _is_idle;
+
+        std::queue<Task> _tasks;
+        size_t _max_waiting;
+        size_t _busy;
+        bool _closed;
     };
 
 protected:
@@ -106,7 +180,98 @@ protected:
         return result;
     }
 
-    static bool process_dng(IConsoleOutput& console, Parameters parameters)
+    // Packs samples MSB-first at the given bit depth (TIFF layout). Returns the number of bytes written.
+    static size_t pack_samples(const uint16_t* in, size_t count, int bits, uint8_t* out)
+    {
+        uint8_t* w = out;
+        uint64_t acc = 0;
+        int bits_in_acc = 0;
+        for (size_t i = 0; i < count; ++i)
+        {
+            acc = (acc << bits) | in[i];
+            bits_in_acc += bits;
+            while (bits_in_acc >= 8)
+            {
+                bits_in_acc -= 8;
+                *w++ = (uint8_t)(acc >> bits_in_acc);
+            }
+        }
+
+        if (bits_in_acc)
+            *w++ = (uint8_t)(acc << (8 - bits_in_acc));
+
+        return (size_t)(w - out);
+    }
+
+    // Writes the same file as DNGWriter::WriteToFile, byte for byte, without copying the image data.
+    // The layout is built with a 1-byte image. It is last in the data area, so only the IFD offset
+    // in the header and the StripByteCounts entry depend on its size.
+    static bool write_dng(const std::string& path, tinydngwriter::DNGImage& dng_image, const uint8_t* data, size_t data_size, std::string& err)
+    {
+        const unsigned char stand_in = 0;
+        dng_image.SetImageData(&stand_in, 1);
+
+        std::ostringstream data_os, ifd_os;
+        if (!dng_image.WriteDataToStream(&data_os) || !dng_image.WriteIFDToStream(0, (unsigned)dng_image.GetStripOffset(), &ifd_os))
+        {
+            err = dng_image.Error();
+            return false;
+        }
+
+        std::string tags_data = data_os.str(), ifd = ifd_os.str();
+        const size_t strip_offset = dng_image.GetStripOffset();
+        if (strip_offset + 1 != tags_data.size())
+        {
+            err = "unexpected DNG layout";
+            return false;
+        }
+
+        // IFD is a 2-byte entry count followed by 12-byte entries. StripByteCounts (tag 279) stores its value inline.
+        uint16_t entries;
+        memcpy(&entries, ifd.data(), 2);
+        bool patched = false;
+        for (size_t e = 0; e < entries; ++e)
+        {
+            char* entry = &ifd[2 + 12 * e];
+            uint16_t tag;
+            memcpy(&tag, entry, 2);
+            if (tag == 279)
+            {
+                uint32_t value = (uint32_t)data_size;
+                memcpy(entry + 8, &value, 4);
+                patched = true;
+            }
+        }
+
+        if (!patched)
+        {
+            err = "StripByteCounts is missing";
+            return false;
+        }
+
+        uint8_t header[8] = { 0x49, 0x49, 0x2A, 0x00 };  // TIFF, little-endian
+        uint32_t ifd_offset = (uint32_t)(8 + strip_offset + data_size);
+        memcpy(header + 4, &ifd_offset, 4);
+        const uint32_t next_ifd_offset = 0;
+
+        std::ofstream f_out(path, std::ios::out | std::ios::binary);
+        f_out.write((const char*)header, 8);
+        f_out.write(tags_data.data(), strip_offset);
+        f_out.write((const char*)data, data_size);
+        f_out.write(ifd.data(), ifd.size());
+        f_out.write((const char*)&next_ifd_offset, 4);
+        f_out.close();
+
+        if (!f_out)
+        {
+            err = "write failed";
+            return false;
+        }
+
+        return true;
+    }
+
+    static bool process_dng(IConsoleOutput& console, Parameters& parameters)
     {
         // Create ZRAW decoder
         auto decoder = zraw_decoder__create();
@@ -295,7 +460,9 @@ protected:
 
         // Get CFA data
         //progressBar.SetDescription("Saving DNG file - %s", outputRawFilePath.c_str());
-        std::vector<uint16_t> image_data(frame_info.width_in_photodiodes * frame_info.height_in_photodiodes);
+        // Reused between frames to avoid allocating a large buffer every time
+        thread_local std::vector<uint16_t> image_data;
+        image_data.resize(frame_info.width_in_photodiodes * frame_info.height_in_photodiodes);
         auto cfa_state = zraw_decoder__get_decompressed_CFA(decoder, image_data.data(), image_data.size() * sizeof(uint16_t));
         if (!process_zraw_decoder_state(console, cfa_state))
         {
@@ -346,101 +513,81 @@ protected:
             return false;
         }
 
+        std::string err;
+        bool written = false;
         switch (parameters.compression)
         {
         case ZrawProcessingModel::RawCompression_t::None:
-            dng_image.SetImageDataPacked(image_data.data(), image_data.size(), frame_info.bits_per_photodiode_value, true);
+        {
+            // Same bytes as SetImageDataPacked: packed samples, zero padded to 16 bits per sample
+            thread_local std::vector<uint8_t> packed;
+            packed.resize(image_data.size() * sizeof(uint16_t));
+            size_t packed_size = pack_samples(image_data.data(), image_data.size(), frame_info.bits_per_photodiode_value, packed.data());
+            memset(packed.data() + packed_size, 0, packed.size() - packed_size);
+
+            written = write_dng(parameters.dng_path, dng_image, packed.data(), packed.size(), err);
             break;
+        }
 
         case ZrawProcessingModel::RawCompression_t::LosslessJPEG:
-            dng_image.SetImageDataJpeg(image_data.data(), w, h, frame_info.bits_per_photodiode_value);
+        {
+            // Like SetImageDataJpeg, each pair of CFA rows is encoded as one row twice as wide
+            const uint8_t* jpeg;
+            size_t jpeg_size;
+            if (h % 2 == 0 && Lj92Encoder::Encode(image_data.data(), w * 2, h / 2, frame_info.bits_per_photodiode_value, jpeg, jpeg_size))
+            {
+                written = write_dng(parameters.dng_path, dng_image, jpeg, jpeg_size, err);
+            }
+            else
+            {
+                // Anything Lj92Encoder does not handle goes through tinydngwriter
+                dng_image.SetImageDataJpeg(image_data.data(), w, h, frame_info.bits_per_photodiode_value);
+
+                tinydngwriter::DNGWriter dng_writer(false);
+                dng_writer.AddImage(&dng_image);
+                written = dng_writer.WriteToFile(parameters.dng_path.c_str(), &err);
+            }
             break;
+        }
 
         default:
             return false;
         }
 
-        tinydngwriter::DNGWriter dng_writer(false);
-        dng_writer.AddImage(&dng_image);
-
-        std::string err;
-        dng_writer.WriteToFile(parameters.dng_path.c_str(), &err);
+        if (!written)
+        {
+            console.printf("Could not write DNG file %s: %s\n", parameters.dng_path.c_str(), err.c_str());
+            return false;
+        }
 
         return true;
     }
 
     void _thread_func()
     {
-        while (this->_runs)
+        while (true)
         {
-            if (!_finished)
-            {
-                if (_console == nullptr)
-                {
-                    _finished = true;
-                    continue;
-                }
+            Queue::Task task;
+            if (!_queue.Pop(task))
+                break;
 
-                _console->printf("Received DNG frame task!\n");
-                process_dng(*_console, _parameters);
+            task.console->printf("Received DNG frame task!\n");
+            process_dng(*task.console, task.parameters);
 
-                _finished = true;
-            }
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            _queue.TaskDone();
         }
     }
 
-    // FIXME: Warning! We need to initialize these bools before thread is started because it uses these fields!
-    std::atomic_bool _runs;
-    std::atomic_bool _finished;
+    Queue& _queue;
 
     std::thread _thread;
 
-    std::mutex _mutex;
-
-    IConsoleOutput* _console;
-
-    Parameters _parameters;
-
 public:
-    ZrawConverterThread() : _runs(true), _finished(true), _thread(&ZrawConverterThread::_thread_func, this), _console(nullptr) {}
+    ZrawConverterThread(Queue& queue) : _queue(queue), _thread(&ZrawConverterThread::_thread_func, this) {}
 
-    bool SetProcessingFrame(IConsoleOutput& console, Parameters parameters)
-    {
-        _mutex.lock();
-
-        // If previous frame is still processing - exit
-        if (!_finished)
-        {
-            _mutex.unlock();
-            return false;
-        }
-
-        // Prepare parameters
-        _console = &console;
-        _parameters = parameters;
-
-        // Start processing
-        _finished = false;
-        
-        _mutex.unlock();
-
-        return true;
-    }
-
-    bool IsProcessingFrame()
-    {
-        bool res = false;
-        _mutex.lock();
-        res = !_finished;
-        _mutex.unlock();
-        return res;
-    }
-
+    // The queue must be closed first, otherwise join() never returns
     ~ZrawConverterThread()
     {
-        _runs = false;
         _thread.join();
     }
 };

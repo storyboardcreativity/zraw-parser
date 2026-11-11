@@ -28,8 +28,6 @@ class DebugTabUserControl : public nana::panel<true>, public IConsoleView
 
         void printf(const char* format, ...) override
         {
-            //_mutex.lock();
-
             // 1. Calculate buffer length
             va_list args;
             va_start(args, format);
@@ -45,27 +43,42 @@ class DebugTabUserControl : public nana::panel<true>, public IConsoleView
             va_end(args);
 
             // 4. Get current thread ID and it's category
-            if (_threads.find(std::this_thread::get_id()) == _threads.end())
+            // _mutex guards _threads and the log file. The listbox calls stay outside of it,
+            // holding it while the GUI thread is inside nana could deadlock.
+            nana::drawerbase::listbox::cat_proxy cat;
+            bool found;
+            {
+                std::lock_guard<std::mutex> lock(_mutex);
+                auto it = _threads.find(std::this_thread::get_id());
+                found = it != _threads.end();
+                if (found)
+                    cat = it->second;
+            }
+
+            if (!found)
             {
                 auto thread_str = std::string("Thread #") + std::to_string(std::hash<std::thread::id>{}(std::this_thread::get_id()));
 
-                auto cat = _userControl.ConsoleBox.append(thread_str);
+                cat = _userControl.ConsoleBox.append(thread_str);
+
+                std::lock_guard<std::mutex> lock(_mutex);
                 _threads[std::this_thread::get_id()] = cat;
             }
-            
+
             // 5. Calculate time offset
             const std::chrono::duration<double> elapsed_seconds = std::chrono::system_clock::now() - _start;
 
             auto msg = std::string("Thread #") + std::to_string(std::hash<std::thread::id>{}(std::this_thread::get_id())) + " | " + std::to_string(elapsed_seconds.count()) + "s | " + std::string(buffer);
-            _appendLineToFile(_log_file_path, msg);
+            {
+                std::lock_guard<std::mutex> lock(_mutex);
+                _appendLineToFile(_log_file_path, msg);
+            }
 
             // 6. Append string
-            _threads[std::this_thread::get_id()].append({ std::to_string(elapsed_seconds.count()), std::string(buffer) });
+            cat.append({ std::to_string(elapsed_seconds.count()), std::string(buffer) });
 
             // 7. Remove buffer
             delete[] buffer;
-
-            //_mutex.unlock();
         }
 
     private:
