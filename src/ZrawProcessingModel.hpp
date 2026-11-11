@@ -193,8 +193,9 @@ public:
 
         if (!anythingChanged)
             return;
-        
+
         _updateInputFilesValidity();
+        _updateValidityInfo();
 
         TRIGGER_EVENT(EventInputFilePathsUpdate);
     }
@@ -206,6 +207,8 @@ public:
             return;
 
         _inputFilesPaths.erase(it);
+
+        _updateValidityInfo();
 
         TRIGGER_EVENT(EventInputFilePathsUpdate);
     }
